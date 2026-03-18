@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore.js";
-import type { Message } from "../store/useChatStore.js";
+import type { Message } from "@ai-ops/types";
 import { chatWithAgent, getConversationHistory, getConversationsList } from "../services/agentApi.js";
 import Sidebar from "../components/Sidebar.js";
 import ChatArea from "../components/ChatArea.js";

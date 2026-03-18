@@ -8,6 +8,7 @@ import { conversations, messages as dbMessages, auditLogs, users } from "../data
 import { eq, asc, desc } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../database/schema.js";
+import type { UserRole, Message as SharedMessage } from "@ai-ops/types";
 
 @Injectable()
 export class AgentService {
@@ -30,7 +31,7 @@ export class AgentService {
    * @param userRole 使用者角色
    * @param toolName 欲呼叫的工具名稱
    */
-  private canAccessTool(userRole: "admin" | "operator" | "viewer", toolName: string): boolean {
+  private canAccessTool(userRole: UserRole, toolName: string): boolean {
     const permissions = {
       admin: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],
       operator: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],

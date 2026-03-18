@@ -1,25 +1,18 @@
 import { create } from "zustand";
-
-/**
- * 對話訊息型別
- */
-export interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import type { Message, Conversation } from "@ai-ops/types";
 
 /**
  * 聊天介面的狀態管理
  */
 interface ChatState {
   messages: Message[];
-  conversations: any[];
+  conversations: Conversation[];
   isLoading: boolean;
   status: string;
   conversationId: string | null;
   addMessage: (message: Message) => void;
   setMessages: (messages: Message[]) => void;
-  setConversations: (conversations: any[]) => void;
+  setConversations: (conversations: Conversation[]) => void;
   setLoading: (isLoading: boolean) => void;
   setStatus: (status: string) => void;
   setConversationId: (id: string | null) => void;

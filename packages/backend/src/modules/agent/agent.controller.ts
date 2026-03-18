@@ -2,6 +2,7 @@ import { Body, Controller, Post, Get, Param } from "@nestjs/common";
 import { AgentService } from "./agent.service.js";
 import { ChatDto } from "./dto/chat.dto.js";
 import { AppConfigService } from "../../config/config.service.js";
+import type { ApiResponse, Conversation, Message, AuditLog } from "@ai-ops/types";
 
 /**
  * Agent 控制器：提供前端呼叫 AI Agent 的 API 接口
@@ -17,11 +18,11 @@ export class AgentController {
    * 取得所有會話列表
    */
   @Get("conversations")
-  async getConversations() {
+  async getConversations(): Promise<ApiResponse<Conversation[]>> {
     const list = await this.agentService.getConversations();
     return {
       success: true,
-      data: list,
+      data: list as any,
     };
   }
 
@@ -29,11 +30,11 @@ export class AgentController {
    * 取得特定會話的訊息歷史
    */
   @Get("conversations/:id")
-  async getConversationMessages(@Param("id") id: string) {
+  async getConversationMessages(@Param("id") id: string): Promise<ApiResponse<Message[]>> {
     const messages = await this.agentService.getConversationMessages(id);
     return {
       success: true,
-      data: messages,
+      data: messages as any,
     };
   }
 
@@ -41,12 +42,11 @@ export class AgentController {
    * 取得審核日誌 (僅限 admin)
    */
   @Get("audit-logs")
-  async getAuditLogs() {
-    // 這裡我們先模擬權限 check，從環境變數取得 Mock User
+  async getAuditLogs(): Promise<ApiResponse<AuditLog[]>> {
     const logs = await this.agentService.getAuditLogs(this.configService.mockUserUsername);
     return {
       success: true,
-      data: logs,
+      data: logs as any,
     };
   }
 
@@ -54,25 +54,24 @@ export class AgentController {
    * 對特定審核日誌執行 AI 分析
    */
   @Post("audit-logs/:id/analyze")
-  async analyzeAuditLog(@Param("id") id: string) {
+  async analyzeAuditLog(@Param("id") id: string): Promise<ApiResponse<string>> {
     const analysis = await this.agentService.analyzeOneAuditLog(id, this.configService.mockUserUsername);
     return {
       success: true,
-      data: analysis,
+      data: analysis || "",
     };
   }
 
   /**
    * 處理與 Agent 對話的 POST 請求
-   * @param chatDto 包含使用者訊息的資料
    */
   @Post("chat")
-  async chat(@Body() chatDto: ChatDto) {
+  async chat(@Body() chatDto: ChatDto): Promise<ApiResponse<string>> {
     const { message, history, conversationId } = chatDto;
     const result = await this.agentService.chat(message, history, conversationId);
     return {
       success: true,
-      message: result.content,
+      data: result.content || "",
       conversationId: result.conversationId,
     };
   }
