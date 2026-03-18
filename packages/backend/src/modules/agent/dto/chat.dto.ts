@@ -8,10 +8,14 @@ export class ChatDto {
   @IsNotEmpty({ message: "訊息不能為空" })
   message: string;
 
-  /**
-   * 之前的對話歷史 (可選)
-   */
   @IsArray({ message: "歷史紀錄格式不正確" })
   @IsOptional()
   history?: { role: "user" | "assistant"; content: string }[];
+
+  /**
+   * 對話會話 ID (可選)
+   */
+  @IsString({ message: "會話 ID 格式不正確" })
+  @IsOptional()
+  conversationId?: string;
 }

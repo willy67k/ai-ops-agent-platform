@@ -1,8 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject } from "@nestjs/common";
 import { AppConfigService } from "../../config/config.service.js";
 import { ToolsService } from "./tools/tools.service.js";
 import { agentTools } from "./tools/tools.schema.js";
 import OpenAI from "openai";
+import { DRIZZLE } from "../database/database.module.js";
+import { conversations, messages as dbMessages } from "../database/schema.js";
+import { eq, asc, desc } from "drizzle-orm";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "../database/schema.js";
 
 @Injectable()
 export class AgentService {
@@ -11,7 +16,8 @@ export class AgentService {
 
   constructor(
     private configService: AppConfigService,
-    private toolsService: ToolsService
+    private toolsService: ToolsService,
+    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>
   ) {
     // 初始化 OpenAI 客戶端
     this.openai = new OpenAI({
@@ -20,16 +26,48 @@ export class AgentService {
   }
 
   /**
+   * 取得所有會話列表 (由新到舊)
+   */
+  async getConversations() {
+    return this.db.select().from(conversations).orderBy(desc(conversations.createdAt));
+  }
+
+  /**
+   * 取得特定會話的訊息紀錄
+   */
+  async getConversationMessages(conversationId: string) {
+    return this.db
+      .select({
+        role: dbMessages.role,
+        content: dbMessages.content,
+      })
+      .from(dbMessages)
+      .where(eq(dbMessages.conversationId, conversationId))
+      .orderBy(asc(dbMessages.createdAt));
+  }
+
+  /**
    * 與 Agent 對話的主方法
    * @param message 使用者的輸入訊息
-   * @param history 之前的對話紀錄
+   * @param history 前端傳來的對話紀錄 (可選)
+   * @param conversationId 對話會話 ID (可選)
    */
-  async chat(message: string, history: { role: "user" | "assistant"; content: string }[] = []) {
-    // 1. 修剪對話歷史 (避免 Token 溢出，保留最近 10 輪，即 20 則訊息)
+  async chat(message: string, history: any[] = [], conversationId?: string) {
+    // 1. 確保對話會話存在
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
+      const [newConv] = await this.db
+        .insert(conversations)
+        .values({ title: message.slice(0, 50) })
+        .returning();
+      currentConversationId = newConv.id;
+    }
+
+    // 2. 修剪對話歷史
     const MAX_HISTORY = 20;
     const truncatedHistory = history.length > MAX_HISTORY ? history.slice(history.length - MAX_HISTORY) : history;
 
-    // 2. 初始化對話紀錄與優化 System Prompt
+    // 3. 初始化對話紀錄
     const messages: any[] = [
       {
         role: "system",
@@ -45,16 +83,19 @@ export class AgentService {
       { role: "user", content: message },
     ];
 
+    // 保存使用者訊息到資料庫
+    await this.db.insert(dbMessages).values({
+      conversationId: currentConversationId,
+      role: "user",
+      content: message,
+    });
+
     try {
-      // 檢查 API Key 是否存在
       if (!this.configService.openaiApiKey) {
-        throw new Error("尚未設定 OpenAI API Key，請檢查環境變數配置。");
+        throw new Error("尚未設定 OpenAI API Key");
       }
 
-      // 開始執行迴圈：AI 可能會多次要求呼叫工具，直到它準備好給出最終回答
-      // eslint-disable-next-line no-constant-condition
       while (true) {
-        // 2. 送出當前的對話紀錄給 OpenAI
         const response = await this.openai.chat.completions.create({
           model: this.configService.openaiModel,
           messages: messages,
@@ -63,22 +104,15 @@ export class AgentService {
         });
 
         const responseMessage = response.choices[0].message;
-
-        // 將 AI 的回覆加入對話紀錄（包含可能的 tool_calls）
         messages.push(responseMessage);
 
-        // 3. 檢查是否有 Tool Calling 要求
         if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-          this.logger.log(`AI 請求執行工具：${responseMessage.tool_calls.length} 個要求`);
-
           for (const toolCall of responseMessage.tool_calls) {
             const functionName = (toolCall as any).function.name;
             const functionArgs = JSON.parse((toolCall as any).function.arguments);
-
             let toolResult;
 
             try {
-              // 4. 根據 AI 的要求執行對應的 Node.js 函式 (Mock)
               if (functionName === "getJiraTasks") {
                 toolResult = this.toolsService.getJiraTasks(functionArgs);
               } else if (functionName === "sendNotification") {
@@ -87,13 +121,9 @@ export class AgentService {
                 toolResult = { error: `未知的工具名稱: ${functionName}` };
               }
             } catch (toolError) {
-              this.logger.error(`工具執行發生異常: ${toolError.message}`);
               toolResult = { error: "工具內部執行失敗", details: toolError.message };
             }
 
-            this.logger.log(`工具 ${functionName} 執行完畢，結果：${JSON.stringify(toolResult)}`);
-
-            // 5. 將工具執行結果回傳給 OpenAI
             messages.push({
               tool_call_id: toolCall.id,
               role: "tool",
@@ -101,22 +131,27 @@ export class AgentService {
               content: JSON.stringify(toolResult),
             });
           }
-          // 繼續迴圈，讓 AI 根據工具結果生成下一步的內容
           continue;
         }
 
-        // 如果沒有 tool_calls，代表 AI 已經給出最終文字回答
-        return responseMessage.content;
+        // 保存助手回覆到資料庫
+        await this.db.insert(dbMessages).values({
+          conversationId: currentConversationId,
+          role: "assistant",
+          content: responseMessage.content || "",
+        });
+
+        return {
+          content: responseMessage.content,
+          conversationId: currentConversationId,
+        };
       }
     } catch (error: any) {
       this.logger.error(`Agent 執行失敗: ${error.message}`);
-
-      // 根據錯誤類型提供更友善的回覆
-      if (error?.status === 401 || error?.message?.includes("API key")) {
-        return "抱歉，目前 AI 服務的金鑰似乎無效或已過期，請聯絡系統管理員檢查後端設定。";
-      }
-
-      return `抱歉，我在處理您的請求時遇到了一個錯誤：${error.message}`;
+      return {
+        content: `抱歉，系統發生錯誤：${error.message}`,
+        conversationId: currentConversationId,
+      };
     }
   }
 }
