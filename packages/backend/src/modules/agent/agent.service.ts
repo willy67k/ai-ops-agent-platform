@@ -32,9 +32,9 @@ export class AgentService {
    */
   private canAccessTool(userRole: "admin" | "operator" | "viewer", toolName: string): boolean {
     const permissions = {
-      admin: ["getJiraTasks", "sendNotification"],
-      operator: ["getJiraTasks", "sendNotification"],
-      viewer: ["getJiraTasks"], // Viewer 不能發送通知
+      admin: ["getJiraTasks", "sendNotification", "analyzeLogs"],
+      operator: ["getJiraTasks", "sendNotification", "analyzeLogs"],
+      viewer: ["getJiraTasks"],
     };
     return (permissions[userRole] || []).includes(toolName);
   }
@@ -89,6 +89,40 @@ export class AgentService {
   }
 
   /**
+   * AI 分析單筆審核日誌
+   */
+  async analyzeOneAuditLog(logId: string, username: string) {
+    // 1. 權限檢查
+    const [user] = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+    if (!user || (user.role !== "admin" && user.role !== "operator")) {
+      throw new Error("權限不足，無法執行 AI 分析。");
+    }
+
+    // 2. 獲取日誌資料
+    const [log] = await this.db.select().from(auditLogs).where(eq(auditLogs.id, logId)).limit(1);
+    if (!log) throw new Error("找不到該筆日誌。");
+
+    // 3. 呼叫 OpenAI 進行分析 (不使用工具，直接問答)
+    const prompt = `你是一個運維專家。請分析以下這筆工具調用的審核紀錄，並給出專業建議或解釋。
+    工具名稱: ${log.toolName}
+    輸入參數: ${JSON.stringify(log.input)}
+    輸出結果: ${JSON.stringify(log.output)}
+    執行狀態: ${log.status}
+    
+    請以 Markdown 格式回傳，包含：
+    1. 執行概述
+    2. 是否有異常或潛在問題
+    3. 改進建議 (若有必要)`;
+
+    const response = await this.openai.chat.completions.create({
+      model: this.configService.openaiModel,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    return response.choices[0].message.content;
+  }
+
+  /**
    * 與 Agent 對話的主方法
    * @param message 使用者的輸入訊息
    * @param history 前端傳來的對話紀錄 (可選)
@@ -114,9 +148,9 @@ export class AgentService {
       {
         role: "system",
         content: `你是一個專業的 Cloud Ops 運維專家。
-        你的任務是協助使用者管理 Jira 任務、檢查系統狀態並執行通知。
+        你的任務是協助使用者管理 Jira 任務、分析系統日誌並預警、檢查系統狀態並執行通知。
         規範：
-        1. 回答必須專業且簡潔。
+        1. 回答必須專業且簡潔。如果有分析日誌，請提供重點摘要 (Errors/Warnings)。
         2. 呼叫工具前，如果缺乏必要參數，請詢問使用者。
         3. 執行 sendNotification 時，請確認收件者與訊息內容是否正確。
         4. 如果工具執行失敗，請誠實告訴使用者原因並嘗試提供替代建議。`,
@@ -169,6 +203,8 @@ export class AgentService {
                   toolResult = this.toolsService.getJiraTasks(functionArgs);
                 } else if (functionName === "sendNotification") {
                   toolResult = this.toolsService.sendNotification(functionArgs);
+                } else if (functionName === "analyzeLogs") {
+                  toolResult = await this.toolsService.analyzeLogs(functionArgs);
                 } else {
                   toolResult = { error: `未知的工具名稱: ${functionName}` };
                 }

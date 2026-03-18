@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { getAuditLogs } from "../services/agentApi.js";
+import { getAuditLogs, analyzeAuditLog } from "../services/agentApi.js";
 import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const AuditLogs: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -20,12 +23,27 @@ const AuditLogs: React.FC = () => {
     fetchLogs();
   }, []);
 
+  const handleAnalyze = async (id: string) => {
+    setAnalyzingId(id);
+    try {
+      const res = await analyzeAuditLog(id);
+      if (res.success) {
+        setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, aiAnalysis: res.data } : l)));
+      }
+    } catch (err) {
+      console.error("分析失敗", err);
+      alert("AI 分析失敗，請確認權限或網路狀態。");
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#0b0f19] p-8 font-sans text-gray-100">
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-2xl font-bold text-transparent">系統審核日誌 (Audit Logs)</h1>
-          <p className="mt-1 text-sm text-gray-400">追蹤所有 AI Agent 的工具取用與敏感操作</p>
+          <p className="mt-1 text-sm text-gray-400">追蹤 AI Agent 執行軌跡，並可調用 AI 進行離線分析</p>
         </div>
         <Link to="/" className="rounded-xl border border-gray-700 bg-gray-800/50 px-6 py-2 text-sm font-semibold transition-all hover:bg-gray-700">
           返回對話
@@ -41,7 +59,7 @@ const AuditLogs: React.FC = () => {
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase">動作</th>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase">工具</th>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase">狀態</th>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">輸入/輸出詳情</th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">分析與詳情</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
@@ -74,19 +92,36 @@ const AuditLogs: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    <details className="group cursor-pointer">
-                      <summary className="text-xs font-medium text-blue-500 transition-all hover:text-blue-400">查看詳情</summary>
-                      <div className="mt-4 grid grid-cols-2 gap-4">
-                        <div className="rounded-lg border border-gray-800 bg-black/40 p-3 font-mono text-[10px]">
-                          <div className="mb-2 border-b border-gray-800 pb-1 text-gray-500">INPUT</div>
-                          <pre className="text-gray-300">{JSON.stringify(log.input, null, 2)}</pre>
+                    <div className="flex items-center gap-4">
+                      {log.aiAnalysis ? (
+                        <div className="mb-4 flex-1 rounded-lg border border-blue-500/10 bg-blue-500/5 p-4">
+                          <div className="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-blue-400 uppercase">
+                            <span>✨ AI 分析結果</span>
+                          </div>
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.aiAnalysis}</ReactMarkdown>
+                          </div>
                         </div>
-                        <div className="rounded-lg border border-gray-800 bg-black/40 p-3 font-mono text-[10px]">
-                          <div className="mb-2 border-b border-gray-800 pb-1 text-gray-500">OUTPUT</div>
-                          <pre className="text-gray-300">{JSON.stringify(log.output, null, 2)}</pre>
+                      ) : (
+                        <button onClick={() => handleAnalyze(log.id)} disabled={analyzingId === log.id} className="text-xs font-bold text-blue-500 transition-all hover:text-blue-400 disabled:opacity-30">
+                          {analyzingId === log.id ? "⌛ 分析中..." : "🪄 AI 分析"}
+                        </button>
+                      )}
+
+                      <details className="group cursor-pointer">
+                        <summary className="text-xs font-medium text-gray-500 transition-all hover:text-gray-300">數據內容</summary>
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className="rounded-lg border border-gray-800 bg-black/40 p-3 font-mono text-[10px]">
+                            <div className="mb-2 border-b border-gray-800 pb-1 text-gray-500">INPUT</div>
+                            <pre className="text-gray-300">{JSON.stringify(log.input, null, 2)}</pre>
+                          </div>
+                          <div className="rounded-lg border border-gray-800 bg-black/40 p-3 font-mono text-[10px]">
+                            <div className="mb-2 border-b border-gray-800 pb-1 text-gray-500">OUTPUT</div>
+                            <pre className="text-gray-300">{JSON.stringify(log.output, null, 2)}</pre>
+                          </div>
                         </div>
-                      </div>
-                    </details>
+                      </details>
+                    </div>
                   </td>
                 </tr>
               ))

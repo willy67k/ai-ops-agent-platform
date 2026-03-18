@@ -37,3 +37,11 @@ export const getAuditLogs = async () => {
   const response = await axios.get(`${BACKEND_URL}/audit-logs`);
   return response.data;
 };
+
+/**
+ * 分析特定的審核日誌 (Admin/Operator)
+ */
+export const analyzeAuditLog = async (id: string) => {
+  const response = await axios.post(`${BACKEND_URL}/audit-logs/${id}/analyze`);
+  return response.data;
+};

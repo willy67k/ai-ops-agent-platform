@@ -51,6 +51,18 @@ export class AgentController {
   }
 
   /**
+   * 對特定審核日誌執行 AI 分析
+   */
+  @Post("audit-logs/:id/analyze")
+  async analyzeAuditLog(@Param("id") id: string) {
+    const analysis = await this.agentService.analyzeOneAuditLog(id, this.configService.mockUserUsername);
+    return {
+      success: true,
+      data: analysis,
+    };
+  }
+
+  /**
    * 處理與 Agent 對話的 POST 請求
    * @param chatDto 包含使用者訊息的資料
    */
