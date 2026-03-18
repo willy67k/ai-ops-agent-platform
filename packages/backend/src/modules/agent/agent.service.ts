@@ -61,6 +61,34 @@ export class AgentService {
   }
 
   /**
+   * 取得審核日誌 (限制 Admin 存取)
+   */
+  async getAuditLogs(username: string) {
+    // 1. 檢查使用者角色
+    const [user] = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+
+    if (!user || user.role !== "admin") {
+      throw new Error("權限不足，僅管理員可以查看日誌。");
+    }
+
+    // 2. 取得日誌並關聯使用者名稱
+    return this.db
+      .select({
+        id: auditLogs.id,
+        action: auditLogs.action,
+        toolName: auditLogs.toolName,
+        input: auditLogs.input,
+        output: auditLogs.output,
+        status: auditLogs.status,
+        createdAt: auditLogs.createdAt,
+        username: users.username,
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.userId, users.id))
+      .orderBy(desc(auditLogs.createdAt));
+  }
+
+  /**
    * 與 Agent 對話的主方法
    * @param message 使用者的輸入訊息
    * @param history 前端傳來的對話紀錄 (可選)
@@ -110,8 +138,8 @@ export class AgentService {
         throw new Error("尚未設定 OpenAI API Key");
       }
 
-      // [模擬權限] 這裡我們先拿固定的 operator 使用者來示範 RBAC
-      const [currentUser] = await this.db.select().from(users).where(eq(users.username, "operator_user")).limit(1);
+      // [模擬權限] 這裡我們先拿固定的使用者的環境變數來示範 RBAC
+      const [currentUser] = await this.db.select().from(users).where(eq(users.username, this.configService.mockUserUsername)).limit(1);
       const userRole = currentUser?.role || "viewer";
 
       while (true) {

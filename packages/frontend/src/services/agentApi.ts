@@ -29,3 +29,11 @@ export const getConversationHistory = async (id: string) => {
   const response = await axios.get(`${BACKEND_URL}/conversations/${id}`);
   return response.data;
 };
+
+/**
+ * 取得審核日誌 (限制 Admin)
+ */
+export const getAuditLogs = async () => {
+  const response = await axios.get(`${BACKEND_URL}/audit-logs`);
+  return response.data;
+};

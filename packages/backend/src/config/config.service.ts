@@ -32,4 +32,8 @@ export class AppConfigService {
   get openaiModel(): string {
     return this.config.get<string>("OPENAI_MODEL", "gpt-4o-mini");
   }
+
+  get mockUserUsername(): string {
+    return this.config.get<string>("MOCK_USER_USERNAME", "operator_user");
+  }
 }

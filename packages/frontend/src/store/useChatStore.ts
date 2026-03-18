@@ -13,7 +13,7 @@ export interface Message {
  */
 interface ChatState {
   messages: Message[];
-  conversations: any[]; // 歷史對話列表
+  conversations: any[];
   isLoading: boolean;
   status: string;
   conversationId: string | null;

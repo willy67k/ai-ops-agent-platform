@@ -1,13 +1,17 @@
 import { Body, Controller, Post, Get, Param } from "@nestjs/common";
 import { AgentService } from "./agent.service.js";
 import { ChatDto } from "./dto/chat.dto.js";
+import { AppConfigService } from "../../config/config.service.js";
 
 /**
  * Agent 控制器：提供前端呼叫 AI Agent 的 API 接口
  */
 @Controller("agent")
 export class AgentController {
-  constructor(private readonly agentService: AgentService) {}
+  constructor(
+    private readonly agentService: AgentService,
+    private readonly configService: AppConfigService
+  ) {}
 
   /**
    * 取得所有會話列表
@@ -30,6 +34,19 @@ export class AgentController {
     return {
       success: true,
       data: messages,
+    };
+  }
+
+  /**
+   * 取得審核日誌 (僅限 admin)
+   */
+  @Get("audit-logs")
+  async getAuditLogs() {
+    // 這裡我們先模擬權限 check，從環境變數取得 Mock User
+    const logs = await this.agentService.getAuditLogs(this.configService.mockUserUsername);
+    return {
+      success: true,
+      data: logs,
     };
   }
 
