@@ -1,202 +1,186 @@
 # AI Ops Agent Platform
 
-An internal AI agent platform designed to automate operational workflows by integrating LLMs with tool-based execution and system orchestration.
+An intelligent internal operations platform designed to automate workflows by integrating LLMs with tool-based execution, persistent memory, and robust RBAC.
 
-> It is an extensible AI-powered internal operations platform.
-
----
-
-## Overview
-
-AI Ops Agent Platform is a fullstack application that demonstrates how Large Language Models (LLMs) can be integrated into internal systems to improve productivity, automate workflows, and assist decision-making.
-
-Instead of a simple prompt-response chatbot, this system is built around a **tool-driven agent architecture**, enabling the AI to interact with internal services such as task management systems, notification services, and workflow engines.
+> AI 運維助手平台：整合大語言模型、工具調用迴圈、持久化會話與嚴格的權限控管系統。
 
 ---
 
-## Key Features
+## System Design & Architecture (系統設計與架構)
 
-### AI Agent (Tool Calling)
+This platform is designed as a **production-oriented AI agent system**, focusing on extensibility, reliability, and operational safety.
 
-- Uses OpenAI API for LLM capabilities
-- Supports **function/tool calling**
-- Dynamically selects tools based on user intent
-- Executes real system operations (not just text generation)
+- **Layered Monorepo Architecture**  
+  The system separates frontend (React), backend (NestJS), and shared contracts into a Turborepo workspace, enabling high development velocity and strong type safety across services.
 
----
+- **Relational Memory & Persistence Layer**  
+  PostgreSQL is used to persist sessions, messages, and audit logs, enabling long-term contextual awareness and full traceability across agent interactions.
 
-### Internal Tool Integration
+- **Schema-Driven Tool System**  
+  Tools are defined via JSON schema and dynamically registered, allowing new capabilities to be added without modifying core agent logic.
 
-The agent can interact with multiple internal tools:
+- **Event-Driven Execution (Extensible)**  
+  The system is designed to evolve into an event-driven architecture where tool executions can be processed asynchronously (e.g., via queues like BullMQ), enabling better scalability and fault isolation.
 
-- `getJiraTasks` → Fetch task data (Supports filtering by status, priority, assignee, and labels)
-- `sendNotification` → Trigger notifications (Slack / Email mock)
-
----
-
-### Workflow Orchestration
-
-- Supports **contextual conversation** (Agent remembers previous messages)
-- Supports **multi-step execution** via OpenAI tool calling loop
-- Designed for **extensibility** (new tools can be added to `ToolsService` easily)
+- **Separation of Concerns**  
+  The architecture strictly decouples:
+  - Agent reasoning (LLM)
+  - Tool execution (business logic)
+  - Workflow orchestration (multi-step control)
 
 ---
 
-### Chat-based Interface
+## Agent Execution Model (Agent 運行模型)
 
-- Interactive UI (React)
-- Real-time conversation with AI agent
-- Displays tool execution logs for transparency
+The system follows a **Closed-Loop Reasoning & Execution Model** with support for observability and failure handling.
 
----
+1. **Context Enrichment**
+   - User input is combined with historical messages from PostgreSQL
+   - Ensures long-term conversational memory
 
-### Scalable Architecture
+2. **Reasoning Loop (Thought → Action)**
+   - LLM decides whether to respond or trigger a tool
+   - Emits structured `tool_call` requests
 
-- Modular backend (NestJS)
-- Tool abstraction layer
-- Separation between:
-  - Agent logic
-  - Tool execution
-  - Workflow orchestration
+3. **Secure Execution Layer**
+   - Tool calls pass through RBAC validation
+   - Unauthorized actions are rejected with structured errors
 
----
+4. **Tool Execution & Resilience**
+   - Tools are executed via a centralized executor
+   - Supports:
+     - Retry mechanisms (future extension)
+     - Timeout handling
+     - Error normalization
 
-## Tech Stack
+5. **Observation Feedback**
+   - Tool results are injected back into the LLM
+   - Enables multi-step reasoning and iterative refinement
 
-### Frontend
+6. **Audit & Logging**
+   - Each step (input, tool call, result) is persisted
+   - Provides full traceability and debugging capability
 
-- React
-- TypeScript
-
-### Backend
-
-- NestJS
-- Node.js
-- OpenAI API
-
-### AI / Agent
-
-- Tool Calling (OpenAI function calling)
-- Prompt orchestration
-- Agent execution loop
-
-### Infra
-
-- Docker
-- REST API architecture
+7. **(Future) Async Execution**
+   - Long-running tasks can be offloaded to background workers
+   - Enables scalable agent workflows (e.g., batch processing)
 
 ---
 
-## Agent Design
+## Scalability & Extensibility (擴展性與擴容能力)
 
-This system follows a **tool-based agent architecture**:
+The system is designed to scale from a prototype into an enterprise-grade internal platform.
 
-1. User sends a request
-2. LLM interprets intent
-3. LLM decides which tool to call
-4. Backend executes the tool
-5. Results are returned to LLM
-6. LLM generates final response
+- **Stateless Backend Services**
+  NestJS services are stateless and rely on PostgreSQL for persistence, allowing horizontal scaling behind a load balancer.
+
+- **Async Task Processing (Future)**
+  Tool execution can be extended to async workers using message queues (e.g., BullMQ), enabling:
+  - High-throughput processing
+  - Failure isolation
+  - Retry mechanisms
+
+- **Pluggable Tool Ecosystem**
+  New tools can be added with minimal changes:
+  - Define schema
+  - Register in tool registry
+  - Implement handler
+
+- **Observability & Debuggability**
+  - Audit logs for traceability
+  - Structured logging for debugging
+  - Future integration with monitoring systems (e.g., Grafana)
+
+- **Security-first Design**
+  - RBAC enforcement at execution layer
+  - Audit trail for all actions
+  - Prevents unsafe agent behavior
 
 ---
 
-### Example Flow
+## Trade-offs & Design Decisions
 
-**User Input:**
+- Chose relational DB over vector DB for structured auditability
+- Prioritized synchronous execution for simplicity, with async extensibility
+- Used tool-based architecture instead of monolithic prompts for scalability
 
+---
+
+## Key Features (核心功能)
+
+- **Intelligent AI Agent**: Multi-step reasoning powered by OpenAI Tool Calling.
+- **Enterprise-Grade RBAC**: Role-based access control for secure ops.
+- **Audit Logs & AI Analysis**: Full traceability with AI-powered diagnostics.
+- **Modern UI**: Dark-themed Professional interface with Markdown & Syntax Highlighting.
+
+---
+
+## Tech Stack (技術棧)
+
+- **Frontend**: React 19, Vite, Tailwind CSS, Zustand, React Router 7.
+- **Backend**: NestJS, Drizzle ORM (PostgreSQL), OpenAI SDK.
+- **Database**: PostgreSQL (Session & Audit persistence).
+- **Types**: Shared TypeScript package `@ai-ops/types`.
+
+---
+
+## Getting Started (快速開始)
+
+### 1. Prerequisites
+
+- Node.js (v18+)
+- PostgreSQL Database
+- OpenAI API Key
+- Yarn (v1.x or v3+)
+
+### 2. Installation
+
+```bash
+yarn
 ```
-Summarize today's Jira tasks and assign high-priority ones
+
+### 3. Environment Setup
+
+Create `.env.development` in `packages/backend`:
+
+```env
+OPENAI_API_KEY=your_key_here
+DATABASE_URL=postgresql://user:pass@localhost:5432/ai_ops
+MOCK_USER_USERNAME=admin_user # admin_user, operator_user, viewer_user
 ```
 
-**Agent Execution:**
+### 4. Database Setup
 
-1. Call `getJiraTasks`
-2. Call `summarizeTasks`
-3. Call `classifyTasks`
-4. Call `assignTask`
+```bash
+cd packages/backend
+yarn db:push
+```
 
----
+### 5. Running the App
 
-## Tool Example
+```bash
+# Start Backend
+cd packages/backend
+yarn dev
 
-```ts
-export async function getJiraTasks() {
-  return [
-    { id: "JIRA-1", title: "Fix login bug", priority: "high" },
-    { id: "JIRA-2", title: "Improve dashboard UI", priority: "low" },
-  ];
-}
+# Start Frontend
+cd packages/frontend
+yarn dev
 ```
 
 ---
 
-## Workflow Design
+## Internal Tools (內建工具清單)
 
-The system is designed to support:
-
-- Multi-step task execution
-- Conditional branching (future extension)
-- Integration with internal systems
-
-This enables use cases such as:
-
-- Automated support triage
-- Incident response workflows
-- Internal reporting automation
-
----
-
-## Real-world Use Cases
-
-- Customer support automation
-- Internal task management optimization
-- Engineering workflow acceleration
-- AI-assisted operations (AI Ops)
-
----
-
-## Future Improvements
-
-- Persistent memory (conversation history)
-- RAG (Retrieval-Augmented Generation)
-- Multi-agent collaboration
-- RBAC (Role-Based Access Control)
-- Audit logging system
-- Real Jira / Slack integration
-
----
-
-## Design Philosophy
-
-- **Tool-first, not prompt-first**
-- **Composable architecture**
-- **Extensible workflow system**
-- **Production-oriented design (not demo-only)**
+| Tool Name          | Description                                 | Access Level   |
+| :----------------- | :------------------------------------------ | :------------- |
+| `getJiraTasks`     | Fetch & filter Jira tasks from mock data.   | All Roles      |
+| `summarizeTasks`   | Generate statistical overview of tasks.     | All Roles      |
+| `sendNotification` | Trigger Slack/Email notifications.          | Admin/Operator |
+| `analyzeLogs`      | (Internal/Audit) AI-driven log diagnostics. | Admin/Operator |
 
 ---
 
 ## Author
 
-Built as part of a fullstack + AI engineering exploration focusing on:
-
-- Internal platform systems
-- AI-driven automation
-- Scalable system design
-
----
-
-## Notes
-
-This project is a demonstration of integrating AI agents into real-world internal systems.
-All external services (Jira, notifications) are mocked for demonstration purposes.
-
----
-
-## Why This Project Matters
-
-This project demonstrates:
-
-- Real-world AI agent architecture
-- Internal tooling system design
-- Fullstack engineering capability
-- Ability to work with ambiguity and evolving requirements
+AI Ops platform built with a focus on **Agentic Workflows** and **Secure Operations**.

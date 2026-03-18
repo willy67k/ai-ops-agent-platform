@@ -17,22 +17,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelectConversation, onNewChat }) =>
         <p className="text-sm text-gray-400">智能運維助手</p>
       </div>
 
-      <Link to="/audit-logs" className="group mb-8 flex items-center gap-1 text-xs font-semibold text-red-500/80 transition-all hover:text-red-400">
-        <span>⚙️ 審核日誌 (Admin Only)</span>
+      <Link to="/audit-logs" className="mb-8 flex cursor-pointer items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 py-2 text-xs font-bold text-red-500 transition-all hover:bg-red-500/20 active:scale-95">
+        審核日誌 (Admin Only)
       </Link>
 
-      <button onClick={onNewChat} className="mb-6 flex items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800/50 py-3 text-sm font-semibold transition-all hover:bg-gray-700 active:scale-95">
-        <span>＋</span> 開啟新對話
+      <button onClick={onNewChat} className="mb-6 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800/50 py-3 text-sm font-semibold transition-all hover:bg-gray-700 active:scale-95">
+        <span>+</span> 開啟新對話
       </button>
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <h2 className="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">歷史紀錄</h2>
-        <div className="scrollbar-thin scrollbar-thumb-gray-800 flex-1 space-y-2 overflow-y-auto pr-2">
+        <div className="flex-1 space-y-2 overflow-y-auto pr-2">
           {conversations.map((conv) => (
             <button
               key={conv.id}
               onClick={() => onSelectConversation(conv.id)}
-              className={`w-full rounded-lg p-3 text-left text-sm transition-all hover:bg-white/5 ${conversationId === conv.id ? "border border-blue-500/50 bg-blue-600/20 text-blue-400" : "text-gray-400"}`}
+              className={`w-full cursor-pointer rounded-lg p-3 text-left text-sm transition-all hover:bg-white/5 ${conversationId === conv.id ? "border border-blue-500/50 bg-blue-600/20 text-blue-400" : "text-gray-400"}`}
             >
               <div className="truncate font-medium">{conv.title || "未命名對話"}</div>
               <div className="mt-1 text-[10px] opacity-40">{new Date(conv.createdAt).toLocaleString()}</div>

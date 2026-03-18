@@ -21,7 +21,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isLoadin
           disabled={isLoading}
         />
         <button
-          className={`rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-900/20 transition-all ${isLoading ? "cursor-not-allowed bg-gray-700 text-gray-400" : "bg-blue-600 text-white hover:bg-blue-500 active:scale-95"}`}
+          className={`cursor-pointer rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-900/20 transition-all ${isLoading ? "cursor-not-allowed bg-gray-700 text-gray-400" : "bg-blue-600 text-white hover:bg-blue-500 active:scale-95"}`}
           onClick={onSend}
           disabled={isLoading}
         >

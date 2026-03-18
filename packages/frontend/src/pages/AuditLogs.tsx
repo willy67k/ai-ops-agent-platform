@@ -45,7 +45,7 @@ const AuditLogs: React.FC = () => {
           <h1 className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-2xl font-bold text-transparent">系統審核日誌 (Audit Logs)</h1>
           <p className="mt-1 text-sm text-gray-400">追蹤 AI Agent 執行軌跡，並可調用 AI 進行離線分析</p>
         </div>
-        <Link to="/" className="rounded-xl border border-gray-700 bg-gray-800/50 px-6 py-2 text-sm font-semibold transition-all hover:bg-gray-700">
+        <Link to="/" className="cursor-pointer rounded-xl border border-gray-700 bg-gray-800/50 px-6 py-2 text-sm font-semibold transition-all hover:bg-gray-700">
           返回對話
         </Link>
       </header>
@@ -96,15 +96,15 @@ const AuditLogs: React.FC = () => {
                       {log.aiAnalysis ? (
                         <div className="mb-4 flex-1 rounded-lg border border-blue-500/10 bg-blue-500/5 p-4">
                           <div className="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-blue-400 uppercase">
-                            <span>✨ AI 分析結果</span>
+                            <span>AI 分析結果</span>
                           </div>
                           <div className="prose prose-invert prose-sm max-w-none">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.aiAnalysis}</ReactMarkdown>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => handleAnalyze(log.id)} disabled={analyzingId === log.id} className="text-xs font-bold text-blue-500 transition-all hover:text-blue-400 disabled:opacity-30">
-                          {analyzingId === log.id ? "⌛ 分析中..." : "🪄 AI 分析"}
+                        <button onClick={() => handleAnalyze(log.id)} disabled={analyzingId === log.id} className="cursor-pointer text-xs font-bold text-blue-500 transition-all hover:text-blue-400 disabled:opacity-30">
+                          {analyzingId === log.id ? "分析中..." : "AI 分析"}
                         </button>
                       )}
 
