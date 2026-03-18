@@ -25,7 +25,11 @@ export class AgentService {
    * @param history 之前的對話紀錄
    */
   async chat(message: string, history: { role: "user" | "assistant"; content: string }[] = []) {
-    // 1. 初始化對話紀錄與優化 System Prompt
+    // 1. 修剪對話歷史 (避免 Token 溢出，保留最近 10 輪，即 20 則訊息)
+    const MAX_HISTORY = 20;
+    const truncatedHistory = history.length > MAX_HISTORY ? history.slice(history.length - MAX_HISTORY) : history;
+
+    // 2. 初始化對話紀錄與優化 System Prompt
     const messages: any[] = [
       {
         role: "system",
@@ -37,7 +41,7 @@ export class AgentService {
         3. 執行 sendNotification 時，請確認收件者與訊息內容是否正確。
         4. 如果工具執行失敗，請誠實告訴使用者原因並嘗試提供替代建議。`,
       },
-      ...history,
+      ...truncatedHistory,
       { role: "user", content: message },
     ];
 
@@ -76,9 +80,9 @@ export class AgentService {
             try {
               // 4. 根據 AI 的要求執行對應的 Node.js 函式 (Mock)
               if (functionName === "getJiraTasks") {
-                toolResult = await this.toolsService.getJiraTasks(functionArgs);
+                toolResult = this.toolsService.getJiraTasks(functionArgs);
               } else if (functionName === "sendNotification") {
-                toolResult = await this.toolsService.sendNotification(functionArgs);
+                toolResult = this.toolsService.sendNotification(functionArgs);
               } else {
                 toolResult = { error: `未知的工具名稱: ${functionName}` };
               }
