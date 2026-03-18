@@ -29,19 +29,16 @@ Instead of a simple prompt-response chatbot, this system is built around a **too
 
 The agent can interact with multiple internal tools:
 
-- `getJiraTasks` → Fetch task data
-- `summarizeTasks` → Generate summaries
-- `classifyTasks` → Categorize tasks (bug, feature, ops)
-- `assignTask` → Assign tasks to team members
-- `sendNotification` → Trigger notifications (Slack / Lark)
+- `getJiraTasks` → Fetch task data (Supports filtering by status, priority, assignee, and labels)
+- `sendNotification` → Trigger notifications (Slack / Email mock)
 
 ---
 
 ### Workflow Orchestration
 
-- Supports **multi-step execution**
-- Agent can chain multiple tools to complete a task
-- Designed for **extensibility** (new tools can be added easily)
+- Supports **contextual conversation** (Agent remembers previous messages)
+- Supports **multi-step execution** via OpenAI tool calling loop
+- Designed for **extensibility** (new tools can be added to `ToolsService` easily)
 
 ---
 

@@ -1,6 +1,21 @@
 version: "3.8"
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: ai-ops-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: ai_ops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-ops-network
+
   backend:
     build:
       context: .
@@ -10,6 +25,9 @@ services:
     environment:
       - NODE_ENV=production
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgres://postgres:password123@db:5432/ai_ops
+    depends_on:
+      - db
     networks:
       - ai-ops-network
 
@@ -23,6 +41,9 @@ services:
       - backend
     networks:
       - ai-ops-network
+
+volumes:
+  postgres_data:
 
 networks:
   ai-ops-network:
