@@ -24,4 +24,8 @@ export class AppConfigService {
   get isVercel(): boolean {
     return !!(this.config.get("VERCEL") || this.config.get("VITE_VERCEL_ENV"));
   }
+
+  get openaiApiKey(): string {
+    return this.config.get<string>("OPENAI_API_KEY", "");
+  }
 }
