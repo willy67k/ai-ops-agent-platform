@@ -5,21 +5,8 @@ import { chatWithAgent, getConversationHistory, getConversationsList } from "./s
 import "./index.css";
 
 const App: React.FC = () => {
-  const { 
-    messages, 
-    conversations, 
-    isLoading, 
-    status, 
-    conversationId, 
-    addMessage, 
-    setMessages, 
-    setConversations, 
-    setLoading, 
-    setStatus, 
-    setConversationId,
-    clearMessages 
-  } = useChatStore();
-  
+  const { messages, conversations, isLoading, status, conversationId, addMessage, setMessages, setConversations, setLoading, setStatus, setConversationId, clearMessages } = useChatStore();
+
   const [inputValue, setInputValue] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -108,27 +95,24 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen flex-col bg-[#0b0f19] font-sans text-gray-100 md:flex-row">
       {/* 側邊狀態面板 Status Panel */}
-      <aside className="w-full flex flex-col border-b border-gray-800 bg-[#0f172a] p-6 md:w-80 md:border-r md:border-b-0">
+      <aside className="flex w-full flex-col border-b border-gray-800 bg-[#0f172a] p-6 md:w-80 md:border-r md:border-b-0">
         <div className="mb-8">
           <h1 className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">AI Ops Platform</h1>
           <p className="text-sm text-gray-400">智能運維助手</p>
         </div>
 
-        <button 
-          onClick={handleNewChat}
-          className="mb-6 flex items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800/50 py-3 text-sm font-semibold transition-all hover:bg-gray-700 active:scale-95"
-        >
+        <button onClick={handleNewChat} className="mb-6 flex items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800/50 py-3 text-sm font-semibold transition-all hover:bg-gray-700 active:scale-95">
           <span>＋</span> 開啟新對話
         </button>
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <h2 className="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">歷史紀錄</h2>
-          <div className="flex-1 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-800">
+          <div className="scrollbar-thin scrollbar-thumb-gray-800 flex-1 space-y-2 overflow-y-auto pr-2">
             {conversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={() => handleSelectConversation(conv.id)}
-                className={`w-full text-left rounded-lg p-3 text-sm transition-all hover:bg-white/5 ${conversationId === conv.id ? 'bg-blue-600/20 border border-blue-500/50 text-blue-400' : 'text-gray-400'}`}
+                className={`w-full rounded-lg p-3 text-left text-sm transition-all hover:bg-white/5 ${conversationId === conv.id ? "border border-blue-500/50 bg-blue-600/20 text-blue-400" : "text-gray-400"}`}
               >
                 <div className="truncate font-medium">{conv.title || "未命名對話"}</div>
                 <div className="mt-1 text-[10px] opacity-40">{new Date(conv.createdAt).toLocaleString()}</div>
