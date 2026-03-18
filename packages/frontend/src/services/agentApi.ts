@@ -5,9 +5,10 @@ import axios from "axios";
  */
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:6970/agent";
 
-export const chatWithAgent = async (message: string) => {
+export const chatWithAgent = async (message: string, history: any[] = []) => {
   const response = await axios.post(`${BACKEND_URL}/chat`, {
     message: message,
+    history: history,
   });
   return response.data;
 };

@@ -28,4 +28,8 @@ export class AppConfigService {
   get openaiApiKey(): string {
     return this.config.get<string>("OPENAI_API_KEY", "");
   }
+
+  get openaiModel(): string {
+    return this.config.get<string>("OPENAI_MODEL", "gpt-4o-mini");
+  }
 }

@@ -29,7 +29,7 @@ const App: React.FC = () => {
       setTimeout(() => setStatus("正在與 OpenAI 連線..."), 500);
       setTimeout(() => setStatus("AI 正在思考並呼叫工具..."), 1500);
 
-      const response = await chatWithAgent(inputValue);
+      const response = await chatWithAgent(inputValue, messages);
       
       const assistantMessage: Message = { 
         role: "assistant", 

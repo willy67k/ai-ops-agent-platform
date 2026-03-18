@@ -15,7 +15,7 @@ export class AgentController {
    */
   @Post("chat")
   async chat(@Body() chatDto: ChatDto) {
-    const result = await this.agentService.chat(chatDto.message);
+    const result = await this.agentService.chat(chatDto.message, chatDto.history);
     return {
       success: true,
       message: result,

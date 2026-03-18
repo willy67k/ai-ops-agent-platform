@@ -22,8 +22,9 @@ export class AgentService {
   /**
    * 與 Agent 對話的主方法
    * @param message 使用者的輸入訊息
+   * @param history 之前的對話紀錄
    */
-  async chat(message: string) {
+  async chat(message: string, history: { role: "user" | "assistant"; content: string }[] = []) {
     // 1. 初始化對話紀錄與優化 System Prompt
     const messages: any[] = [
       {
@@ -36,6 +37,7 @@ export class AgentService {
         3. 執行 sendNotification 時，請確認收件者與訊息內容是否正確。
         4. 如果工具執行失敗，請誠實告訴使用者原因並嘗試提供替代建議。`,
       },
+      ...history,
       { role: "user", content: message },
     ];
 
@@ -50,7 +52,7 @@ export class AgentService {
       while (true) {
         // 2. 送出當前的對話紀錄給 OpenAI
         const response = await this.openai.chat.completions.create({
-          model: "gpt-4o",
+          model: this.configService.openaiModel,
           messages: messages,
           tools: agentTools as any,
           tool_choice: "auto",
