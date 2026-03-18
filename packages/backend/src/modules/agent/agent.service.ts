@@ -4,7 +4,7 @@ import { ToolsService } from "./tools/tools.service.js";
 import { agentTools } from "./tools/tools.schema.js";
 import OpenAI from "openai";
 import { DRIZZLE } from "../database/database.module.js";
-import { conversations, messages as dbMessages } from "../database/schema.js";
+import { conversations, messages as dbMessages, auditLogs, users } from "../database/schema.js";
 import { eq, asc, desc } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../database/schema.js";
@@ -26,17 +26,31 @@ export class AgentService {
   }
 
   /**
+   * RBAC 權限檢查邏輯
+   * @param userRole 使用者角色
+   * @param toolName 欲呼叫的工具名稱
+   */
+  private canAccessTool(userRole: "admin" | "operator" | "viewer", toolName: string): boolean {
+    const permissions = {
+      admin: ["getJiraTasks", "sendNotification"],
+      operator: ["getJiraTasks", "sendNotification"],
+      viewer: ["getJiraTasks"], // Viewer 不能發送通知
+    };
+    return (permissions[userRole] || []).includes(toolName);
+  }
+
+  /**
    * 取得所有會話列表 (由新到舊)
    */
   async getConversations() {
-    return this.db.select().from(conversations).orderBy(desc(conversations.createdAt));
+    return await this.db.select().from(conversations).orderBy(desc(conversations.createdAt));
   }
 
   /**
    * 取得特定會話的訊息紀錄
    */
   async getConversationMessages(conversationId: string) {
-    return this.db
+    return await this.db
       .select({
         role: dbMessages.role,
         content: dbMessages.content,
@@ -90,10 +104,15 @@ export class AgentService {
       content: message,
     });
 
+    // 5. 工具呼叫迴圈
     try {
       if (!this.configService.openaiApiKey) {
         throw new Error("尚未設定 OpenAI API Key");
       }
+
+      // [模擬權限] 這裡我們先拿固定的 operator 使用者來示範 RBAC
+      const [currentUser] = await this.db.select().from(users).where(eq(users.username, "operator_user")).limit(1);
+      const userRole = currentUser?.role || "viewer";
 
       while (true) {
         const response = await this.openai.chat.completions.create({
@@ -112,17 +131,33 @@ export class AgentService {
             const functionArgs = JSON.parse((toolCall as any).function.arguments);
             let toolResult;
 
-            try {
-              if (functionName === "getJiraTasks") {
-                toolResult = this.toolsService.getJiraTasks(functionArgs);
-              } else if (functionName === "sendNotification") {
-                toolResult = this.toolsService.sendNotification(functionArgs);
-              } else {
-                toolResult = { error: `未知的工具名稱: ${functionName}` };
+            // --- RBAC 權限檢查 ---
+            if (!this.canAccessTool(userRole as any, functionName)) {
+              this.logger.warn(`使用者權限不足：無法執行 ${functionName}`);
+              toolResult = { error: `您的權限為 ${userRole}，無法使用工具: ${functionName}` };
+            } else {
+              try {
+                if (functionName === "getJiraTasks") {
+                  toolResult = this.toolsService.getJiraTasks(functionArgs);
+                } else if (functionName === "sendNotification") {
+                  toolResult = this.toolsService.sendNotification(functionArgs);
+                } else {
+                  toolResult = { error: `未知的工具名稱: ${functionName}` };
+                }
+              } catch (toolError) {
+                toolResult = { error: "工具內部執行失敗", details: toolError.message };
               }
-            } catch (toolError) {
-              toolResult = { error: "工具內部執行失敗", details: toolError.message };
             }
+
+            // --- 審核日誌 (Audit Log) ---
+            await this.db.insert(auditLogs).values({
+              userId: currentUser?.id,
+              action: "CALL_TOOL",
+              toolName: functionName,
+              input: functionArgs,
+              output: toolResult as any,
+              status: (toolResult as any)?.error ? "failed" : "success",
+            });
 
             messages.push({
               tool_call_id: toolCall.id,
