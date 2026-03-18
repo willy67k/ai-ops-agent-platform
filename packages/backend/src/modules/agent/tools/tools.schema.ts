@@ -48,4 +48,18 @@ export const agentTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "summarizeTasks",
+      description: "Summarize a list of Jira tasks. Provides a high-level overview of task distribution, priorities, and status counts.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", description: "Filter by status before summarizing." },
+          assignee: { type: "string", description: "Filter by assignee before summarizing." },
+        },
+      },
+    },
+  },
 ];

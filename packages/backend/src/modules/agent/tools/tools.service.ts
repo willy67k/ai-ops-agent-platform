@@ -49,4 +49,32 @@ export class ToolsService {
       summary: errors.length > 0 ? `偵測到 ${errors.length} 個錯誤，建議優先檢查。` : warnings.length > 0 ? `偵測到 ${warnings.length} 個警告，請留意潛在風險。` : "未偵測到明顯異常。",
     };
   }
+
+  /**
+   * summarizeTasks: 負責統計並摘要任務列表的工具實作
+   */
+  summarizeTasks(args: { status?: string; assignee?: string }) {
+    this.logger.log(`Executing tool: summarizeTasks with args: ${JSON.stringify(args)}`);
+
+    const tasks = this.getJiraTasks(args);
+    const statusCount = tasks.reduce((acc: any, task: any) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const priorityCount = tasks.reduce((acc: any, task: any) => {
+      acc[task.priority] = (acc[task.priority] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      success: true,
+      totalCount: tasks.length,
+      statusBreakdown: statusCount,
+      priorityBreakdown: priorityCount,
+      summary: `目前共有 ${tasks.length} 筆任務。${Object.entries(statusCount)
+        .map(([s, c]) => `${s}: ${c}`)
+        .join(", ")}。`,
+    };
+  }
 }

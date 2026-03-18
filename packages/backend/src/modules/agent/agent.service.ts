@@ -32,9 +32,9 @@ export class AgentService {
    */
   private canAccessTool(userRole: "admin" | "operator" | "viewer", toolName: string): boolean {
     const permissions = {
-      admin: ["getJiraTasks", "sendNotification", "analyzeLogs"],
-      operator: ["getJiraTasks", "sendNotification", "analyzeLogs"],
-      viewer: ["getJiraTasks"],
+      admin: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],
+      operator: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],
+      viewer: ["getJiraTasks", "summarizeTasks"],
     };
     return (permissions[userRole] || []).includes(toolName);
   }
@@ -205,6 +205,8 @@ export class AgentService {
                   toolResult = this.toolsService.sendNotification(functionArgs);
                 } else if (functionName === "analyzeLogs") {
                   toolResult = await this.toolsService.analyzeLogs(functionArgs);
+                } else if (functionName === "summarizeTasks") {
+                  toolResult = this.toolsService.summarizeTasks(functionArgs);
                 } else {
                   toolResult = { error: `未知的工具名稱: ${functionName}` };
                 }
