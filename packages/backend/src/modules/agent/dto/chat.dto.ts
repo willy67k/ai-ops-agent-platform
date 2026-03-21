@@ -15,9 +15,13 @@ export class ChatDto {
   @IsOptional()
   conversationId?: string;
 
-  /**
-   * 是否僅為預演模式 (可選)
-   */
   @IsOptional()
   dryRun?: boolean;
+
+  /**
+   * AI 角色身分 (可選, 例如 SRE, Dev)
+   */
+  @IsString()
+  @IsOptional()
+  agentRole?: string;
 }

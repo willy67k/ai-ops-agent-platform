@@ -25,23 +25,12 @@ export class ToolExecutionProcessor extends WorkerHost {
     logger.info(`開始執行工具任務: ${toolName}`);
 
     try {
-      let result: any;
-      switch (toolName) {
-        case "getJiraTasks":
-          result = this.toolsService.getJiraTasks(args);
-          break;
-        case "sendNotification":
-          result = this.toolsService.sendNotification(args);
-          break;
-        case "analyzeLogs":
-          result = await this.toolsService.analyzeLogs(args);
-          break;
-        case "summarizeTasks":
-          result = this.toolsService.summarizeTasks(args);
-          break;
-        default:
-          throw new Error(`Unknown tool: ${toolName}`);
+      const toolMethod = (this.toolsService as any)[toolName];
+      if (!toolMethod || typeof toolMethod !== "function") {
+        throw new Error(`找不到對應的工具實作: ${toolName}`);
       }
+
+      const result = await toolMethod.call(this.toolsService, args);
       logger.info(`工具任務執行成功: ${toolName}`);
       return result;
     } catch (error: any) {

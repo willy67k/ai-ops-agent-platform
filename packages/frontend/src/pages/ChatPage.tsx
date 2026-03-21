@@ -10,6 +10,7 @@ const ChatPage: React.FC = () => {
   const { messages, isLoading, conversationId, addMessage, setMessages, setConversations, setLoading, setStatus, setConversationId, clearMessages } = useChatStore();
 
   const [inputValue, setInputValue] = useState("");
+  const [selectedRole, setSelectedRole] = useState("SRE");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // 初始化取得歷史列表
@@ -44,7 +45,7 @@ const ChatPage: React.FC = () => {
       setTimeout(() => setStatus("正在與 OpenAI 連線..."), 500);
       setTimeout(() => setStatus("AI 正在思考並呼叫工具..."), 1500);
 
-      const response = await chatWithAgent(inputValue, messages, conversationId);
+      const response = await chatWithAgent(inputValue, messages, conversationId, selectedRole);
 
       if (response.conversationId && response.conversationId !== conversationId) {
         setConversationId(response.conversationId);
@@ -100,7 +101,15 @@ const ChatPage: React.FC = () => {
       <Sidebar onSelectConversation={handleSelectConversation} onNewChat={handleNewChat} />
       <main className="relative flex flex-1 flex-col overflow-hidden">
         <ChatArea chatEndRef={chatEndRef} />
-        <ChatInput value={inputValue} onChange={setInputValue} onSend={handleSend} isLoading={isLoading} />
+        <ChatInput
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={handleSend}
+          isLoading={isLoading}
+          agentRole={selectedRole}
+          onRoleChange={setSelectedRole}
+          disabledRole={!!conversationId}
+        />
       </main>
     </div>
   );

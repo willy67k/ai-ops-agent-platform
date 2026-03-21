@@ -76,8 +76,8 @@ export class AgentController {
    */
   @Post("chat")
   async chat(@Body() chatDto: ChatDto): Promise<ApiResponse<string>> {
-    const { message, history, conversationId, dryRun } = chatDto;
-    const result = await this.agentService.chat(message, history, conversationId, dryRun);
+    const { message, history, conversationId, dryRun, agentRole } = chatDto;
+    const result = await this.agentService.chat(message, history, conversationId, dryRun, agentRole);
     return {
       success: true,
       data: result.content || "",

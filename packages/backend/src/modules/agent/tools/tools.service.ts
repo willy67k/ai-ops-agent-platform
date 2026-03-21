@@ -39,14 +39,28 @@ export class ToolsService {
     const errors = lines.filter((line) => line.toUpperCase().includes("ERROR"));
     const warnings = lines.filter((line) => line.toUpperCase().includes("WARN"));
 
+    const errorPatterns = [
+      { pattern: /DB_CONNECTION/i, diagnosis: "資料庫連線超時", suggestion: "請檢查 PostgreSQL 容器狀態與 DATABASE_URL 配置。" },
+      { pattern: /REDIS_ERROR/i, diagnosis: "Redis 連線失敗", suggestion: "請檢查 Redis 伺服器是否啟動或密碼是否正確。" },
+      { pattern: /OPENAI_API_ERROR/i, diagnosis: "OpenAI API 異常", suggestion: "請檢查 OpenAI API Key 或網路連線是否通暢。" },
+      { pattern: /ECONNREFUSED/i, diagnosis: "服務拒絕連線", suggestion: "可能是下游客服端服務未啟動，請檢查 Service Mesh 狀態。" },
+    ];
+
+    const diagnosisList = errors.map((err: string) => {
+      const match = errorPatterns.find(p => p.pattern.test(err));
+      return match ? { error: err, diagnosis: match.diagnosis, suggestion: match.suggestion } : { error: err, diagnosis: "未知錯誤", suggestion: "建議手動分析原始日誌內容。" };
+    });
+
     return {
       success: true,
       service: args.serviceName || "Global",
       totalLines: lines.length,
       errorCount: errors.length,
       warningCount: warnings.length,
-      criticalErrors: errors.slice(0, 5), // 僅回傳前 5 筆錯誤
-      summary: errors.length > 0 ? `偵測到 ${errors.length} 個錯誤，建議優先檢查。` : warnings.length > 0 ? `偵測到 ${warnings.length} 個警告，請留意潛在風險。` : "未偵測到明顯異常。",
+      analysisResult: diagnosisList.slice(0, 10), // 回傳前 10 筆具體分析
+      overallSummary: errors.length > 0 
+        ? `偵測到 ${errors.length} 個錯誤。初步分析發現 ${[...new Set(diagnosisList.map((d: any) => d.diagnosis))].join(", ")} 等異常情境。` 
+        : "未偵測到明顯異常。",
     };
   }
 

@@ -124,14 +124,24 @@ export class AgentService {
     return response.choices[0].message.content;
   }
 
-  async chat(message: string, history: any[] = [], conversationId?: string, dryRun: boolean = false) {
+  async chat(message: string, history: any[] = [], conversationId?: string, dryRun: boolean = false, agentRole?: string) {
     let currentConversationId = conversationId;
+    let currentAgentRole = agentRole || "SRE";
+
     if (!currentConversationId) {
       const [newConv] = await this.db
         .insert(conversations)
-        .values({ title: message.slice(0, 50) })
+        .values({
+          title: message.slice(0, 50),
+          agentRole: currentAgentRole as any,
+        })
         .returning();
       currentConversationId = newConv.id;
+    } else {
+      const [existingConv] = await this.db.select().from(conversations).where(eq(conversations.id, currentConversationId)).limit(1);
+      if (existingConv) {
+        currentAgentRole = (existingConv as any).agentRole || "SRE";
+      }
     }
 
     await this.db.insert(dbMessages).values({ conversationId: currentConversationId, role: "user", content: message });
@@ -139,11 +149,18 @@ export class AgentService {
     const [currentUser] = await this.db.select().from(users).where(eq(users.username, this.configService.mockUserUsername)).limit(1);
     const userRole: UserRole = (currentUser?.role as UserRole) || "viewer";
 
+    const systemPrompts: Record<string, string> = {
+      SRE: "你是一個專業的 Cloud Ops 運維專家。協助使用者管理 Jira、分析日誌與發送通知。",
+      Dev: "你是一個資深開發工程師。專注於代碼質量、任務分析與自動化流程優化。",
+      Sec: "你是一個資安專家。專注於稽核日誌分析、權限檢查與異常行為定義。",
+    };
+    const systemPrompt = systemPrompts[currentAgentRole] || systemPrompts["SRE"];
+
     try {
       const { content } = await this.agentLoop.run(
         {
           model: this.configService.openaiModel,
-          systemPrompt: "你是一個專業的 Cloud Ops 運維專家。協助使用者管理 Jira、分析日誌與發送通知。",
+          systemPrompt: systemPrompt,
           userMessage: message,
           history,
         },

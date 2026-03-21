@@ -20,6 +20,7 @@ export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title"),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }), // 關聯使用者
+  agentRole: text("agent_role").default("SRE"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
