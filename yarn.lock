@@ -3,11 +3,11 @@
 
 
 "@ai-ops/agent-core@file:packages/agent-core":
-  version "0.0.0"
+  version "0.0.1"
   dependencies:
-    "@ai-ops/observability" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.0-9f53c6f5-7127-45ab-a06f-cbc44fe49fc1-1774078325296/node_modules/@ai-ops/observability"
-    "@ai-ops/tool-registry" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.0-9f53c6f5-7127-45ab-a06f-cbc44fe49fc1-1774078325296/node_modules/@ai-ops/tool-registry"
-    "@ai-ops/types" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.0-9f53c6f5-7127-45ab-a06f-cbc44fe49fc1-1774078325296/node_modules/@ai-ops/types"
+    "@ai-ops/observability" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/observability"
+    "@ai-ops/tool-registry" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/tool-registry"
+    "@ai-ops/types" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/types"
     openai "^6.32.0"
 
 "@ai-ops/observability@file:packages/observability":

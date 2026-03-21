@@ -13,9 +13,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "prettier": "^3.4.2"
   }
 }

@@ -17,28 +17,16 @@ export interface StepObservation {
   result: any;
 }
 
-export type ToolExecutor = (
-  name: string,
-  args: any,
-  context?: any,
-) => Promise<any>;
+export type ToolExecutor = (name: string, args: any, context?: any) => Promise<any>;
 
 export class AgentLoop {
   constructor(
     private openai: OpenAI,
-    private executor: ToolExecutor,
+    private executor: ToolExecutor
   ) {}
 
-  async run(
-    ctx: AgentContext,
-    onStep?: (obs: StepObservation) => Promise<void>,
-    executorContext?: any,
-  ) {
-    const messages: any[] = [
-      { role: "system", content: ctx.systemPrompt },
-      ...(ctx.history || []),
-      { role: "user", content: ctx.userMessage },
-    ];
+  async run(ctx: AgentContext, onStep?: (obs: StepObservation) => Promise<void>, executorContext?: any) {
+    const messages: any[] = [{ role: "system", content: ctx.systemPrompt }, ...(ctx.history || []), { role: "user", content: ctx.userMessage }];
 
     while (true) {
       const response = await this.openai.chat.completions.create({
@@ -61,11 +49,7 @@ export class AgentLoop {
           logger.info(`AI 決定發起工具調用: ${functionName}`);
 
           // 透過注入的執行器執行工具 (例如 BullMQ dispatch)，包含上下文 (如角色)
-          const toolResult = await this.executor(
-            functionName,
-            functionArgs,
-            executorContext,
-          );
+          const toolResult = await this.executor(functionName, functionArgs, executorContext);
 
           if (onStep) {
             await onStep({

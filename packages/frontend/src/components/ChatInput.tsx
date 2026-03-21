@@ -20,11 +20,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isLoadin
             <span>選擇 Agent 角色:</span>
             <div className="flex gap-2">
               {["SRE", "Dev", "Sec"].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => onRoleChange(r)}
-                  className={`cursor-pointer rounded-full px-3 py-1 transition-all ${agentRole === r ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "bg-gray-800 hover:bg-gray-700"}`}
-                >
+                <button key={r} onClick={() => onRoleChange(r)} className={`cursor-pointer rounded-full px-3 py-1 transition-all ${agentRole === r ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "bg-gray-800 hover:bg-gray-700"}`}>
                   {r} {r === "SRE" ? "運維" : r === "Dev" ? "開發" : "資安"}
                 </button>
               ))}

@@ -32,7 +32,7 @@ export class ToolsService {
   /**
    * analyzeLogs: 負責分析日誌內容的工具實作
    */
-  async analyzeLogs(args: { logs: string; serviceName?: string }) {
+  analyzeLogs(args: { logs: string; serviceName?: string }) {
     this.logger.log(`Executing tool: analyzeLogs for service: ${args.serviceName || "unknown"}`);
 
     const lines = args.logs.split("\n");
@@ -47,7 +47,7 @@ export class ToolsService {
     ];
 
     const diagnosisList = errors.map((err: string) => {
-      const match = errorPatterns.find(p => p.pattern.test(err));
+      const match = errorPatterns.find((p) => p.pattern.test(err));
       return match ? { error: err, diagnosis: match.diagnosis, suggestion: match.suggestion } : { error: err, diagnosis: "未知錯誤", suggestion: "建議手動分析原始日誌內容。" };
     });
 
@@ -58,9 +58,7 @@ export class ToolsService {
       errorCount: errors.length,
       warningCount: warnings.length,
       analysisResult: diagnosisList.slice(0, 10), // 回傳前 10 筆具體分析
-      overallSummary: errors.length > 0 
-        ? `偵測到 ${errors.length} 個錯誤。初步分析發現 ${[...new Set(diagnosisList.map((d: any) => d.diagnosis))].join(", ")} 等異常情境。` 
-        : "未偵測到明顯異常。",
+      overallSummary: errors.length > 0 ? `偵測到 ${errors.length} 個錯誤。初步分析發現 ${[...new Set(diagnosisList.map((d: any) => d.diagnosis))].join(", ")} 等異常情境。` : "未偵測到明顯異常。",
     };
   }
 
@@ -71,12 +69,12 @@ export class ToolsService {
     this.logger.log(`Executing tool: summarizeTasks with args: ${JSON.stringify(args)}`);
 
     const tasks = this.getJiraTasks(args);
-    const statusCount = tasks.reduce((acc: any, task: any) => {
+    const statusCount = tasks.reduce<Record<string, number>>((acc, task: any) => {
       acc[task.status] = (acc[task.status] || 0) + 1;
       return acc;
     }, {});
 
-    const priorityCount = tasks.reduce((acc: any, task: any) => {
+    const priorityCount = tasks.reduce<Record<string, number>>((acc, task: any) => {
       acc[task.priority] = (acc[task.priority] || 0) + 1;
       return acc;
     }, {});

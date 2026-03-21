@@ -6,12 +6,7 @@ import type { Message, Conversation, AuditLog, ApiResponse } from "@ai-ops/types
  */
 export const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:6890/api/v1/agent";
 
-export const chatWithAgent = async (
-  message: string,
-  history: Message[] = [],
-  conversationId?: string | null,
-  agentRole?: string
-): Promise<ApiResponse<string>> => {
+export const chatWithAgent = async (message: string, history: Message[] = [], conversationId?: string | null, agentRole?: string): Promise<ApiResponse<string>> => {
   const response = await axios.post(`${BACKEND_URL}/chat`, {
     message: message,
     history: history,

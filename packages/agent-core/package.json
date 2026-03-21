@@ -14,7 +14,8 @@
     "./AgentLoop": "./dist/AgentLoop.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
     "@ai-ops/types": "file:../types",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "typescript": "^5.7.3",
-    "@types/node": "^22.10.7"
+    "@types/node": "^22.10.7",
+    "prettier": "^3.4.2"
   }
 }

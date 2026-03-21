@@ -101,15 +101,7 @@ const ChatPage: React.FC = () => {
       <Sidebar onSelectConversation={handleSelectConversation} onNewChat={handleNewChat} />
       <main className="relative flex flex-1 flex-col overflow-hidden">
         <ChatArea chatEndRef={chatEndRef} />
-        <ChatInput
-          value={inputValue}
-          onChange={setInputValue}
-          onSend={handleSend}
-          isLoading={isLoading}
-          agentRole={selectedRole}
-          onRoleChange={setSelectedRole}
-          disabledRole={!!conversationId}
-        />
+        <ChatInput value={inputValue} onChange={setInputValue} onSend={handleSend} isLoading={isLoading} agentRole={selectedRole} onRoleChange={setSelectedRole} disabledRole={!!conversationId} />
       </main>
     </div>
   );
