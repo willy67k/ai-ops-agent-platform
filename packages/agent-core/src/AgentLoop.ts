@@ -13,11 +13,11 @@ export interface AgentContext {
 
 export interface StepObservation {
   toolName: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
   result: any;
 }
 
-export type ToolExecutor = (name: string, args: any, context?: any) => Promise<any>;
+export type ToolExecutor = (name: string, args: Record<string, unknown>, context?: unknown) => Promise<any>;
 
 export class AgentLoop {
   constructor(
@@ -25,8 +25,17 @@ export class AgentLoop {
     private executor: ToolExecutor
   ) {}
 
-  async run(ctx: AgentContext, onStep?: (obs: StepObservation) => Promise<void>, executorContext?: any) {
+  async run(
+    ctx: AgentContext,
+    onStep?: (obs: StepObservation) => Promise<void>,
+    executorContext?: unknown
+  ): Promise<{ content: string; finalMessages: any[]; usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
     const messages: any[] = [{ role: "system", content: ctx.systemPrompt }, ...(ctx.history || []), { role: "user", content: ctx.userMessage }];
+    let totalUsage = {
+      prompt_tokens: 0,
+      completion_tokens: 0,
+      total_tokens: 0,
+    };
 
     while (true) {
       const response = await this.openai.chat.completions.create({
@@ -35,6 +44,12 @@ export class AgentLoop {
         tools: agentTools as any,
         tool_choice: "auto",
       });
+
+      if (response.usage) {
+        totalUsage.prompt_tokens += response.usage.prompt_tokens || 0;
+        totalUsage.completion_tokens += response.usage.completion_tokens || 0;
+        totalUsage.total_tokens += response.usage.total_tokens || 0;
+      }
 
       const responseMessage = response.choices[0].message;
       messages.push(responseMessage);
@@ -72,6 +87,7 @@ export class AgentLoop {
       return {
         content: responseMessage.content || "",
         finalMessages: messages,
+        usage: totalUsage,
       };
     }
   }

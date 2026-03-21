@@ -18,9 +18,9 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "@ai-ops/types": "file:../types",
-    "@ai-ops/tool-registry": "file:../tool-registry",
-    "@ai-ops/observability": "file:../observability",
+    "@ai-ops/types": "*",
+    "@ai-ops/tool-registry": "*",
+    "@ai-ops/observability": "*",
     "openai": "^6.32.0"
   },
   "devDependencies": {

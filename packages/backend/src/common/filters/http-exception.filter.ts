@@ -19,7 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json({
       success: false,
       data: null,
-      message: typeof message === "object" ? (message as any).message || JSON.stringify(message) : message,
+      message: typeof message === "object" ? message.message || JSON.stringify(message) : message,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

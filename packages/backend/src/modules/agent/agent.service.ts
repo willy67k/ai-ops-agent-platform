@@ -35,9 +35,10 @@ export class AgentService {
     });
 
     // 初始化核心 Reasoning 迴圈 (注入 Job Dispatcher 作為工具執行器)
-    this.agentLoop = new AgentLoop(this.openai, async (name: string, args: any, context?: { role: UserRole; dryRun?: boolean }) => {
-      const role = context?.role || "viewer";
-      const isDryRun = context?.dryRun || false;
+    this.agentLoop = new AgentLoop(this.openai, async (name: string, args: Record<string, unknown>, context?: unknown) => {
+      const ctx = context as { role: UserRole; dryRun?: boolean } | undefined;
+      const role = ctx?.role || "viewer";
+      const isDryRun = ctx?.dryRun || false;
 
       // --- RBAC 權限檢查 ---
       if (!this.canAccessTool(role, name)) {
@@ -157,7 +158,8 @@ export class AgentService {
     const systemPrompt = systemPrompts[currentAgentRole] || systemPrompts["SRE"];
 
     try {
-      const { content } = await this.agentLoop.run(
+      const startTime = Date.now();
+      const { content, usage } = await this.agentLoop.run(
         {
           model: this.configService.openaiModel,
           systemPrompt: systemPrompt,
@@ -165,6 +167,7 @@ export class AgentService {
           history,
         },
         async (obs) => {
+          const toolStartTime = Date.now();
           const [newLog] = await this.db
             .insert(auditLogs)
             .values({
@@ -178,15 +181,26 @@ export class AgentService {
             } as any)
             .returning();
 
+          const toolEndTime = Date.now();
+          await this.db
+            .update(auditLogs)
+            .set({ latencyMs: (toolEndTime - toolStartTime).toString() } as any)
+            .where(eq(auditLogs.id, newLog.id));
+
           this.logSubject.next({ ...newLog, username: this.configService.mockUserUsername });
         },
         { role: userRole, dryRun }
       );
+      const endTime = Date.now();
 
       await this.db.insert(dbMessages).values({
         conversationId: currentConversationId,
         role: "assistant",
         content: content || "",
+        metadata: {
+          usage,
+          latencyMs: endTime - startTime,
+        },
       });
 
       return { content, conversationId: currentConversationId };

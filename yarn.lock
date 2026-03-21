@@ -2,34 +2,6 @@
 # yarn lockfile v1
 
 
-"@ai-ops/agent-core@file:packages/agent-core":
-  version "0.0.1"
-  dependencies:
-    "@ai-ops/observability" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/observability"
-    "@ai-ops/tool-registry" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/tool-registry"
-    "@ai-ops/types" "file:../../AppData/Local/Yarn/Cache/v6/npm-@ai-ops-agent-core-0.0.1-dcfc770f-e8a7-4275-8932-e75ef5856d18-1774082807314/node_modules/@ai-ops/types"
-    openai "^6.32.0"
-
-"@ai-ops/observability@file:packages/observability":
-  version "0.0.0"
-  dependencies:
-    pino "^9.0.0"
-    pino-pretty "^11.0.0"
-
-"@ai-ops/queue@file:packages/queue":
-  version "0.0.0"
-  dependencies:
-    bullmq "^5.71.0"
-    pino "^9.0.0"
-
-"@ai-ops/tool-registry@file:packages/tool-registry":
-  version "0.0.0"
-  dependencies:
-    openai "^6.32.0"
-
-"@ai-ops/types@file:packages/types":
-  version "0.0.1"
-
 "@angular-devkit/core@19.2.17":
   version "19.2.17"
   resolved "https://registry.npmjs.org/@angular-devkit/core/-/core-19.2.17.tgz"

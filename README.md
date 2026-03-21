@@ -1,8 +1,8 @@
 # AI Ops Agent Platform
 
-An intelligent internal operations platform designed to automate workflows by integrating LLMs with tool-based execution, persistent memory, and robust RBAC.
+An intelligent internal operations platform designed to automate workflows by integrating Large Language Models (LLMs) with tool-based execution, persistent memory, and robust Role-Based Access Control (RBAC).
 
-> AI 運維助手平台：整合大語言模型、工具調用迴圈、持久化會話與嚴格的權限控管系統。
+> AI 運維助手平台：整合大語言模型、工具調用迴圈、持久化會話與嚴格的權限控管與監控系統。
 
 ---
 
@@ -124,22 +124,38 @@ The system is designed to scale from a prototype into an enterprise-grade intern
 
 ---
 
+## Documentation (文件說明)
+
+For detailed design and operational instructions, please refer to the `docs` directory:
+(詳細設計與操作說明請參閱 docs 目錄：)
+
+- [API Documentation (API 介面文件)](docs/api.md)
+- [Tool Registration Guide (工具註冊與擴展指南)](docs/tool-registration.md)
+
+---
+
 ## Getting Started (快速開始)
 
-### 1. Prerequisites
+### 1. Prerequisites (前置作業)
 
 - Node.js (v18+)
-- PostgreSQL Database
+- Docker & Docker Compose (Recommended)
 - OpenAI API Key
 - Yarn (v1.x or v3+)
 
-### 2. Installation
+### 2. Quick Run with Docker (快速啟動 - 推薦方式)
 
 ```bash
-yarn
+# Set your API key in the root environment
+export OPENAI_API_KEY=your_key_here
+
+# Start all services (DB, Redis, Backend, Frontend)
+docker-compose up --build
 ```
 
-### 3. Environment Setup
+Once started, the frontend will be accessible at `http://localhost:6969`.
+
+### 3. Local Development (本地開發模式)
 
 Create `.env.development` in `packages/backend`:
 
@@ -149,38 +165,44 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/ai_ops
 MOCK_USER_USERNAME=admin_user # admin_user, operator_user, viewer_user
 ```
 
-### 4. Database Setup
+```bash
+yarn
+```
+
+#### Setup Database (設定資料庫)
 
 ```bash
 cd packages/backend
 yarn db:push
 ```
 
-### 5. Running the App
+#### Launch Development Servers (啟動開發伺服器)
 
 ```bash
 # Start Backend
-cd packages/backend
-yarn dev
-
-# Start Frontend
-cd packages/frontend
 yarn dev
 ```
 
 ---
 
-## Internal Tools (內建工具清單)
+## Key Features & Roadmap (核心功能與技術路徑)
 
-| Tool Name          | Description                                 | Access Level   |
-| :----------------- | :------------------------------------------ | :------------- |
-| `getJiraTasks`     | Fetch & filter Jira tasks from mock data.   | All Roles      |
-| `summarizeTasks`   | Generate statistical overview of tasks.     | All Roles      |
-| `sendNotification` | Trigger Slack/Email notifications.          | Admin/Operator |
-| `analyzeLogs`      | (Internal/Audit) AI-driven log diagnostics. | Admin/Operator |
+- [x] **Monorepo Architecture (Turborepo)**: Structured modular design with strong type-safety. (模組化架構，強型別約束。)
+- [x] **Closed-Loop Reasoning**: AI autonomously decides tool calls and performs multi-step reasoning. (AI 自動決定工具調用與多步推理。)
+- [x] **Asynchronous Execution (BullMQ)**: Job dispatching with BullMQ for scalable tool executions. (非同步任務派發與執行。)
+- [x] **Enterprise-Grade RBAC**: Strict role-based access control for operations safety. (基於角色的嚴謹權限控管。)
+- [x] **Audit Logs & Performance Monitoring**: Traceability, latency, and token usage analysis for every action. (AI 行為追蹤、耗時與 Token 分析。)
+- [x] **AI-Driven Diagnostics**: Dynamic log analysis and automated repair suggestions. (動態日誌分析與修復建議。)
 
 ---
 
-## Author
+## Internal Tool Ecosystem (內建工具清單)
 
-AI Ops platform built with a focus on **Agentic Workflows** and **Secure Operations**.
+| Tool Name          | Description                                  | Access Level   |
+| :----------------- | :------------------------------------------- | :------------- |
+| `getJiraTasks`     | Fetch and filter high-priority tasks.        | All Roles      |
+| `summarizeTasks`   | Statistical overview of current tasks.       | All Roles      |
+| `sendNotification` | Trigger Slack/Email alerts.                  | Admin/Operator |
+| `analyzeLogs`      | AI-driven diagnostic engine for system logs. | Admin/Operator |
+
+---

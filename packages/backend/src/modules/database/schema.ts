@@ -34,8 +34,9 @@ export const messages = pgTable("messages", {
     .references(() => conversations.id, { onDelete: "cascade" })
     .notNull(),
   role: text("role", { enum: ["user", "assistant", "system", "tool"] }).notNull(),
-  content: text("content").notNull(),
+  content: text("content"), // content can be null if it's only toolCalls
   toolCalls: jsonb("tool_calls"),
+  metadata: jsonb("metadata"), // 用於儲存 Token 消耗、耗時等效能數據
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -45,11 +46,13 @@ export const messages = pgTable("messages", {
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-  action: text("action").notNull(), // 例如: "CALL_TOOL", "DELETE_CONV"
+  action: text("action").notNull(),
   toolName: text("tool_name"),
   input: jsonb("input"),
   output: jsonb("output"),
   status: text("status", { enum: ["success", "failed", "dry-run"] }).notNull(),
   traceId: text("trace_id"),
+  latencyMs: text("latency_ms"), // 執行耗時 (毫秒)
+  tokenUsage: jsonb("token_usage"), // 該次操作關聯的 Token 消耗
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
