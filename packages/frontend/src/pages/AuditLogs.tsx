@@ -7,15 +7,22 @@ import remarkGfm from "remark-gfm";
 const AuditLogs: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
+        setError(null);
         const res = await getAuditLogs();
-        if (res.success) setLogs(res.data);
-      } catch (err) {
+        if (res.success) {
+          setLogs(res.data);
+        } else {
+          setError(res.message || "無法取得日誌列表");
+        }
+      } catch (err: any) {
         console.error("無法取得日誌", err);
+        setError(err.response?.data?.message || err.message || "連線至服務器失敗");
       } finally {
         setLoading(false);
       }
@@ -29,10 +36,13 @@ const AuditLogs: React.FC = () => {
       const res = await analyzeAuditLog(id);
       if (res.success) {
         setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, aiAnalysis: res.data } : l)));
+      } else {
+        alert(`分析失敗：${res.message}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("分析失敗", err);
-      alert("AI 分析失敗，請確認權限或網路狀態。");
+      const msg = err.response?.data?.message || err.message || "AI 分析失敗";
+      alert(`分析失敗：${msg}`);
     } finally {
       setAnalyzingId(null);
     }
@@ -49,6 +59,12 @@ const AuditLogs: React.FC = () => {
           返回對話
         </Link>
       </header>
+
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500">
+          ⚠️ 讀取失敗：{error}
+        </div>
+      )}
 
       <div className="flex-1 overflow-x-auto rounded-2xl border border-gray-800 bg-[#0f172a] shadow-2xl">
         <table className="w-full border-collapse text-left">

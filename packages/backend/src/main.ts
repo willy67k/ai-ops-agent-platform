@@ -22,6 +22,9 @@ async function bootstrap() {
     })
   );
 
+  const { AllExceptionsFilter } = await import("./common/filters/http-exception.filter.js");
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   const config = new DocumentBuilder().setTitle("Ai Ops API").setDescription("Ops").setVersion("1.0").build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("swagger/api", app, document);

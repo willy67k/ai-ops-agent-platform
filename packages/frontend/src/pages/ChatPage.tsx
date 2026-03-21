@@ -52,14 +52,19 @@ const ChatPage: React.FC = () => {
         if (listRes.success) setConversations(listRes.data);
       }
 
+      if (!response.success) {
+        throw new Error(response.message || "未知錯誤");
+      }
+
       const assistantMessage: Message = {
         role: "assistant",
         content: response.data || "抱歉，我暫時無法回答這個問題。",
       };
       addMessage(assistantMessage);
-    } catch (error) {
+    } catch (error: any) {
       console.error("對話失敗", error);
-      addMessage({ role: "assistant", content: "發生錯誤，請稍後再試。" });
+      const errorMessage = error.response?.data?.message || error.message || "發生錯誤，請稍後再試。";
+      addMessage({ role: "assistant", content: `系統錯誤：${errorMessage}` });
     } finally {
       setLoading(false);
       setStatus("");

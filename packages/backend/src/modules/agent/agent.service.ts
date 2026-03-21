@@ -130,7 +130,7 @@ export class AgentService {
       return { content, conversationId: currentConversationId };
     } catch (error: any) {
       this.logger.error(`Agent 執行失敗: ${error.message}`);
-      return { content: `抱歉，系統發生錯誤：${error.message}`, conversationId: currentConversationId };
+      throw error;
     }
   }
 }
