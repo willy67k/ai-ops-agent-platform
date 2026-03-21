@@ -27,7 +27,7 @@ COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
 COPY --from=builder /app/packages/backend/package*.json ./packages/backend/
 
 ENV NODE_ENV=production
-EXPOSE 6970
+EXPOSE 6890
 
 # 使用編譯後的路徑啟動後端
 CMD ["node", "packages/backend/dist/main.js"]

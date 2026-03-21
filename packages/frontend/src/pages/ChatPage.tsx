@@ -54,7 +54,7 @@ const ChatPage: React.FC = () => {
 
       const assistantMessage: Message = {
         role: "assistant",
-        content: response.message || "抱歉，我暫時無法回答這個問題。",
+        content: response.data || "抱歉，我暫時無法回答這個問題。",
       };
       addMessage(assistantMessage);
     } catch (error) {

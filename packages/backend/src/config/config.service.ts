@@ -6,7 +6,7 @@ export class AppConfigService {
   constructor(private config: ConfigService) {}
 
   get port(): number {
-    return this.config.get<number>("PORT", 6970);
+    return this.config.get<number>("PORT", 6890);
   }
 
   get frontendUrl(): string {
@@ -35,5 +35,9 @@ export class AppConfigService {
 
   get mockUserUsername(): string {
     return this.config.get<string>("MOCK_USER_USERNAME", "operator_user");
+  }
+
+  get redisUrl(): string {
+    return this.config.get<string>("REDIS_URL", "redis://localhost:6379");
   }
 }

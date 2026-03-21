@@ -1,6 +1,5 @@
 import { Injectable, Logger, Inject } from "@nestjs/common";
 import { AppConfigService } from "../../config/config.service.js";
-import { ToolsService } from "./tools/tools.service.js";
 import { agentTools } from "./tools/tools.schema.js";
 import OpenAI from "openai";
 import { DRIZZLE } from "../database/database.module.js";
@@ -8,7 +7,10 @@ import { conversations, messages as dbMessages, auditLogs, users } from "../data
 import { eq, asc, desc } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../database/schema.js";
-import type { UserRole, Message as SharedMessage } from "@ai-ops/types";
+import type { UserRole } from "@ai-ops/types";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
+import { TOOL_QUEUE } from "../queue/queue.constants.js";
 
 @Injectable()
 export class AgentService {
@@ -17,8 +19,8 @@ export class AgentService {
 
   constructor(
     private configService: AppConfigService,
-    private toolsService: ToolsService,
-    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>
+    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
+    @InjectQueue(TOOL_QUEUE) private toolQueue: Queue
   ) {
     // 初始化 OpenAI 客戶端
     this.openai = new OpenAI({
@@ -200,19 +202,29 @@ export class AgentService {
               toolResult = { error: `您的權限為 ${userRole}，無法使用工具: ${functionName}` };
             } else {
               try {
-                if (functionName === "getJiraTasks") {
-                  toolResult = this.toolsService.getJiraTasks(functionArgs);
-                } else if (functionName === "sendNotification") {
-                  toolResult = this.toolsService.sendNotification(functionArgs);
-                } else if (functionName === "analyzeLogs") {
-                  toolResult = await this.toolsService.analyzeLogs(functionArgs);
-                } else if (functionName === "summarizeTasks") {
-                  toolResult = this.toolsService.summarizeTasks(functionArgs);
-                } else {
-                  toolResult = { error: `未知的工具名稱: ${functionName}` };
-                }
-              } catch (toolError) {
-                toolResult = { error: "工具內部執行失敗", details: toolError.message };
+                // --- 使用 BullMQ 執行工具 (Phase 1 異步化) ---
+                this.logger.log(`Dispatching tool job: ${functionName} with args: ${JSON.stringify(functionArgs)}`);
+                const job = await this.toolQueue.add(
+                  "execute-tool",
+                  {
+                    toolName: functionName,
+                    args: functionArgs,
+                  },
+                  {
+                    attempts: 3,
+                    backoff: {
+                      type: "exponential",
+                      delay: 1000,
+                    },
+                  }
+                );
+
+                // 等待任務完成並取得結果
+                toolResult = await job.waitUntilFinished(new (await import("bullmq")).QueueEvents(this.toolQueue.name, { connection: this.toolQueue.opts.connection }));
+                this.logger.log(`Tool job ${functionName} finished with result: ${JSON.stringify(toolResult)}`);
+              } catch (toolError: any) {
+                this.logger.error(`Tool job ${functionName} failed: ${toolError.message}`);
+                toolResult = { error: "工具非同步執行失敗", details: toolError.message };
               }
             }
 
@@ -222,8 +234,8 @@ export class AgentService {
               action: "CALL_TOOL",
               toolName: functionName,
               input: functionArgs,
-              output: toolResult as any,
-              status: (toolResult as any)?.error ? "failed" : "success",
+              output: toolResult,
+              status: toolResult?.error ? "failed" : "success",
             });
 
             messages.push({
