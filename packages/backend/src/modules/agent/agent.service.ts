@@ -6,6 +6,7 @@ import { conversations, messages as dbMessages, auditLogs, users } from "../data
 import { eq, asc, desc } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../database/schema.js";
+import type { UserRole } from "@ai-ops/types";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue, QueueEvents } from "bullmq";
 import { TOOL_QUEUE } from "../queue/queue.constants.js";
@@ -27,8 +28,27 @@ export class AgentService {
     });
 
     // 初始化核心 Reasoning 迴圈 (注入 Job Dispatcher 作為工具執行器)
-    this.agentLoop = new AgentLoop(this.openai, async (name, args) => {
-      this.logger.log(`[Queue Dispatch] 工具 ${name} 已加入任務佇列`);
+    this.agentLoop = new AgentLoop(this.openai, async (name: string, args: any, context?: { role: UserRole; dryRun?: boolean }) => {
+      const role = context?.role || "viewer";
+      const isDryRun = context?.dryRun || false;
+
+      // --- RBAC 權限檢查 ---
+      if (!this.canAccessTool(role, name)) {
+        this.logger.warn(`[RBAC] 使用者權限不足：無法執行工具 ${name}`);
+        return { error: `您的權限為 ${role}，無法執行該操作: ${name}` };
+      }
+
+      // --- Dry-run 模式處理 ---
+      if (isDryRun) {
+        this.logger.log(`[DryRun] 工具 ${name} 預演執行`);
+        return {
+          status: "dry-run",
+          message: `[PREVIEW] 此操作 ${name} 將以參數 ${JSON.stringify(args)} 執行，但目前為試運行模式。`,
+          plannedArgs: args,
+        };
+      }
+
+      this.logger.log(`[Queue Dispatch] 工具 ${name} 已加入任務佇列 (Role: ${role})`);
       const job = await this.toolQueue.add(
         "execute-tool",
         { toolName: name, args },
@@ -43,6 +63,15 @@ export class AgentService {
       events.close();
       return result;
     });
+  }
+
+  private canAccessTool(role: UserRole, toolName: string): boolean {
+    const permissions: Record<UserRole, string[]> = {
+      admin: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],
+      operator: ["getJiraTasks", "sendNotification", "analyzeLogs", "summarizeTasks"],
+      viewer: ["getJiraTasks", "summarizeTasks"],
+    };
+    return (permissions[role] || []).includes(toolName);
   }
 
   async getConversations() {
@@ -87,7 +116,7 @@ export class AgentService {
     return response.choices[0].message.content;
   }
 
-  async chat(message: string, history: any[] = [], conversationId?: string) {
+  async chat(message: string, history: any[] = [], conversationId?: string, dryRun: boolean = false) {
     let currentConversationId = conversationId;
     if (!currentConversationId) {
       const [newConv] = await this.db
@@ -100,6 +129,7 @@ export class AgentService {
     await this.db.insert(dbMessages).values({ conversationId: currentConversationId, role: "user", content: message });
 
     const [currentUser] = await this.db.select().from(users).where(eq(users.username, this.configService.mockUserUsername)).limit(1);
+    const userRole: UserRole = (currentUser?.role as UserRole) || "viewer";
 
     try {
       const { content } = await this.agentLoop.run(
@@ -116,9 +146,10 @@ export class AgentService {
             toolName: obs.toolName,
             input: obs.arguments,
             output: obs.result,
-            status: obs.result?.error ? "failed" : "success",
-          });
-        }
+            status: obs.result?.error ? "failed" : obs.result?.status === "dry-run" ? "dry-run" : "success",
+          } as any);
+        },
+        { role: userRole, dryRun }
       );
 
       await this.db.insert(dbMessages).values({

@@ -48,6 +48,6 @@ export const auditLogs = pgTable("audit_logs", {
   toolName: text("tool_name"),
   input: jsonb("input"),
   output: jsonb("output"),
-  status: text("status", { enum: ["success", "failed"] }).notNull(),
+  status: text("status", { enum: ["success", "failed", "dry-run"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

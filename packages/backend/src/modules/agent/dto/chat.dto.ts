@@ -12,10 +12,12 @@ export class ChatDto {
   @IsOptional()
   history?: { role: "user" | "assistant"; content: string }[];
 
-  /**
-   * 對話會話 ID (可選)
-   */
-  @IsString({ message: "會話 ID 格式不正確" })
   @IsOptional()
   conversationId?: string;
+
+  /**
+   * 是否僅為預演模式 (可選)
+   */
+  @IsOptional()
+  dryRun?: boolean;
 }

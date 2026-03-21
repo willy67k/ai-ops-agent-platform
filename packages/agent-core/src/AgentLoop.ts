@@ -17,15 +17,23 @@ export interface StepObservation {
   result: any;
 }
 
-export type ToolExecutor = (name: string, args: any) => Promise<any>;
+export type ToolExecutor = (
+  name: string,
+  args: any,
+  context?: any,
+) => Promise<any>;
 
 export class AgentLoop {
   constructor(
     private openai: OpenAI,
-    private executor: ToolExecutor
+    private executor: ToolExecutor,
   ) {}
 
-  async run(ctx: AgentContext, onStep?: (obs: StepObservation) => Promise<void>) {
+  async run(
+    ctx: AgentContext,
+    onStep?: (obs: StepObservation) => Promise<void>,
+    executorContext?: any,
+  ) {
     const messages: any[] = [
       { role: "system", content: ctx.systemPrompt },
       ...(ctx.history || []),
@@ -46,17 +54,25 @@ export class AgentLoop {
       if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
         for (const toolCall of responseMessage.tool_calls) {
           if (toolCall.type !== "function") continue;
-          
+
           const functionName = toolCall.function.name;
           const functionArgs = JSON.parse(toolCall.function.arguments);
 
           logger.info(`AI 決定發起工具調用: ${functionName}`);
-          
-          // 透過注入的執行器執行工具 (例如 BullMQ dispatch)
-          const toolResult = await this.executor(functionName, functionArgs);
+
+          // 透過注入的執行器執行工具 (例如 BullMQ dispatch)，包含上下文 (如角色)
+          const toolResult = await this.executor(
+            functionName,
+            functionArgs,
+            executorContext,
+          );
 
           if (onStep) {
-            await onStep({ toolName: functionName, arguments: functionArgs, result: toolResult });
+            await onStep({
+              toolName: functionName,
+              arguments: functionArgs,
+              result: toolResult,
+            });
           }
 
           messages.push({
