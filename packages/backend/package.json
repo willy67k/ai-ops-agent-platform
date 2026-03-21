@@ -16,6 +16,10 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
+    "@ai-ops/agent-core": "file:../agent-core",
+    "@ai-ops/observability": "file:../observability",
+    "@ai-ops/queue": "file:../queue",
+    "@ai-ops/tool-registry": "file:../tool-registry",
     "@ai-ops/types": "file:../types",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",

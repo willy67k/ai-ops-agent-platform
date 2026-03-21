@@ -1,4 +1,6 @@
-export const agentTools = [
+import type { ChatCompletionTool } from "openai/resources/index.mjs";
+
+export const agentTools: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
@@ -58,6 +60,27 @@ export const agentTools = [
         properties: {
           status: { type: "string", description: "Filter by status before summarizing." },
           assignee: { type: "string", description: "Filter by assignee before summarizing." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyzeLogs",
+      description: "AI-driven log diagnostics. Analyze raw log content to detect errors, warnings and suggest fixes.",
+      parameters: {
+        type: "object",
+        required: ["logs"],
+        properties: {
+          logs: {
+            type: "string",
+            description: "The raw log content as a string to be analyzed.",
+          },
+          serviceName: {
+            type: "string",
+            description: "Optional name of the service the logs belong to.",
+          },
         },
       },
     },
