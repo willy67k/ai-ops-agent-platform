@@ -4,7 +4,7 @@ import type { Message, Conversation, AuditLog, ApiResponse } from "@ai-ops/types
 /**
  * 與後端 Agent API 溝通的 Service
  */
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:6890/agent";
+export const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:6890/api/v1/agent";
 
 export const chatWithAgent = async (message: string, history: Message[] = [], conversationId?: string | null): Promise<ApiResponse<string>> => {
   const response = await axios.post(`${BACKEND_URL}/chat`, {

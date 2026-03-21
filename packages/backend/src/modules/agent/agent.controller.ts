@@ -1,8 +1,9 @@
-import { Body, Controller, Post, Get, Param } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Sse } from "@nestjs/common";
 import { AgentService } from "./agent.service.js";
 import { ChatDto } from "./dto/chat.dto.js";
 import { AppConfigService } from "../../config/config.service.js";
 import type { ApiResponse, Conversation, Message, AuditLog } from "@ai-ops/types";
+import { map } from "rxjs";
 
 /**
  * Agent 控制器：提供前端呼叫 AI Agent 的 API 接口
@@ -48,6 +49,14 @@ export class AgentController {
       success: true,
       data: logs as any,
     };
+  }
+
+  /**
+   * 透過 SSE 串流推送即時日誌
+   */
+  @Sse("audit-logs/stream")
+  streamAuditLogs() {
+    return this.agentService.logObservable.pipe(map((log) => ({ data: log })));
   }
 
   /**

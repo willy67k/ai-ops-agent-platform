@@ -11,12 +11,19 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue, QueueEvents } from "bullmq";
 import { TOOL_QUEUE } from "../queue/queue.constants.js";
 import { AgentLoop } from "@ai-ops/agent-core";
+import { traceContext } from "../../common/middleware/trace.middleware.js";
+import { Subject } from "rxjs";
 
 @Injectable()
 export class AgentService {
   private readonly logger = new Logger(AgentService.name);
   private openai: OpenAI;
   private agentLoop: AgentLoop;
+  private logSubject = new Subject<any>();
+
+  get logObservable() {
+    return this.logSubject.asObservable();
+  }
 
   constructor(
     private configService: AppConfigService,
@@ -48,10 +55,11 @@ export class AgentService {
         };
       }
 
-      this.logger.log(`[Queue Dispatch] 工具 ${name} 已加入任務佇列 (Role: ${role})`);
+      const currentTraceId = traceContext.getStore()?.traceId;
+      this.logger.log(`[Queue Dispatch] 工具 ${name} 已加入任務佇列 (Role: ${role}, Trace: ${currentTraceId})`);
       const job = await this.toolQueue.add(
         "execute-tool",
-        { toolName: name, args },
+        { toolName: name, args, traceId: currentTraceId },
         {
           attempts: 3,
           backoff: { type: "exponential", delay: 1000 },
@@ -140,14 +148,20 @@ export class AgentService {
           history,
         },
         async (obs) => {
-          await this.db.insert(auditLogs).values({
-            userId: currentUser?.id,
-            action: "CALL_TOOL",
-            toolName: obs.toolName,
-            input: obs.arguments,
-            output: obs.result,
-            status: obs.result?.error ? "failed" : obs.result?.status === "dry-run" ? "dry-run" : "success",
-          } as any);
+          const [newLog] = await this.db
+            .insert(auditLogs)
+            .values({
+              userId: currentUser?.id,
+              action: "CALL_TOOL",
+              toolName: obs.toolName,
+              input: obs.arguments,
+              output: obs.result,
+              status: obs.result?.error ? "failed" : obs.result?.status === "dry-run" ? "dry-run" : "success",
+              traceId: traceContext.getStore()?.traceId,
+            } as any)
+            .returning();
+
+          this.logSubject.next({ ...newLog, username: this.configService.mockUserUsername });
         },
         { role: userRole, dryRun }
       );

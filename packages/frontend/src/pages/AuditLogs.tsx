@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getAuditLogs, analyzeAuditLog } from "../services/agentApi.js";
+import { getAuditLogs, analyzeAuditLog, BACKEND_URL } from "../services/agentApi.js";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,6 +28,28 @@ const AuditLogs: React.FC = () => {
       }
     };
     fetchLogs();
+
+    // SSE 即時串流接聽
+    const eventSource = new EventSource(`${BACKEND_URL}/audit-logs/stream`, {
+      withCredentials: true,
+    });
+
+    eventSource.onmessage = (event) => {
+      const newLog = JSON.parse(event.data);
+      setLogs((prev) => {
+        // 避免重複
+        if (prev.find((l) => l.id === newLog.id)) return prev;
+        return [newLog, ...prev];
+      });
+    };
+
+    eventSource.onerror = (e) => {
+      console.error("SSE 斷開或發生錯誤", e);
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   const handleAnalyze = async (id: string) => {
@@ -60,11 +82,7 @@ const AuditLogs: React.FC = () => {
         </Link>
       </header>
 
-      {error && (
-        <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500">
-          ⚠️ 讀取失敗：{error}
-        </div>
-      )}
+      {error && <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500">⚠️ 讀取失敗：{error}</div>}
 
       <div className="flex-1 overflow-x-auto rounded-2xl border border-gray-800 bg-[#0f172a] shadow-2xl">
         <table className="w-full border-collapse text-left">
